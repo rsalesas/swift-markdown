@@ -78,8 +78,14 @@ before you build a renderer on them:
 ## Using it
 
 ```swift
-.package(url: "https://github.com/rsalesas/swift-markdown.git", branch: "main"),
+.package(url: "https://github.com/rsalesas/swift-markdown.git", from: "0.9.0"),
 ```
+
+Tagged `0.9.0` — ahead of upstream's 0.8.0, and numbered so it cannot be mistaken
+for an upstream patch release. Unlike upstream's `main`, this fork pins swift-cmark
+to a version rather than tracking its `gfm` branch, because SwiftPM refuses to
+resolve a versioned dependency whose own manifest depends on a branch. Upstream does
+the same pinning when it cuts a release; doing it here is what makes the tag usable.
 
 `main` carries the additions. Each one also lives on a branch that applies cleanly
 to upstream, so it can be offered there unchanged: `footnotes` and
