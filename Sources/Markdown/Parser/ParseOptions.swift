@@ -30,5 +30,21 @@ public struct ParseOptions: OptionSet, Sendable {
 
     /// Disable including a `data-sourcepos` attribute on all block elements during parsing.
     public static let disableSourcePosOpts = ParseOptions(rawValue: 1 << 4)
+
+    /// Enable GitHub-style footnotes: `[^id]` references and `[^id]: text` definitions.
+    ///
+    /// The underlying cmark-gfm parser has always been able to do this; this option
+    /// turns it on and surfaces the results as ``FootnoteReference`` and
+    /// ``FootnoteDefinition`` elements.
+    ///
+    /// Enabling it changes the shape of the parsed document in three ways, all of them
+    /// cmark's behavior rather than this library's:
+    ///
+    /// - Definitions are moved to the end of the document and ordered by *first
+    ///   reference*, so their position in `Document.children` is their number.
+    /// - A definition that is never referenced is dropped from the document.
+    /// - A reference with no matching definition is left as the literal text the
+    ///   author wrote, e.g. `[^missing]`.
+    public static let parseFootnotes = ParseOptions(rawValue: 1 << 5)
 }
 

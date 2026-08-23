@@ -6,6 +6,7 @@
 - ``BlockDirective``
 - ``BlockQuote``
 - ``CustomBlock``
+- ``FootnoteDefinition``
 - ``ListItem``
 - ``OrderedList``
 - ``UnorderedList``
