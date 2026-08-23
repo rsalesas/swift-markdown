@@ -46,5 +46,19 @@ public struct ParseOptions: OptionSet, Sendable {
     /// - A reference with no matching definition is left as the literal text the
     ///   author wrote, e.g. `[^missing]`.
     public static let parseFootnotes = ParseOptions(rawValue: 1 << 5)
+
+    /// Enable GitHub's autolink extension, which turns bare URLs, `www.` hosts and
+    /// email addresses in ordinary text into ``Link`` elements.
+    ///
+    /// cmark-gfm ships this as a syntax extension and this library has never attached
+    /// it, so `Visit https://example.com` parses as one run of ``Text`` by default.
+    public static let parseAutolinks = ParseOptions(rawValue: 1 << 6)
+
+    /// Require two tildes to open and close a ``Strikethrough``.
+    ///
+    /// By default a single `~foo~` is struck through as well. GitHub's own renderer
+    /// is configured this way, so a document written against GitHub may contain
+    /// single tildes it never meant as markup.
+    public static let strikethroughRequiresTwoTildes = ParseOptions(rawValue: 1 << 7)
 }
 
