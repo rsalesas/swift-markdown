@@ -33,6 +33,19 @@ public struct HTMLFormatterOptions: OptionSet {
 
     /// Parse inline attributes as JSON and use the `"class"` property as the resulting span's `class`.
     public static let parseInlineAttributeClass = HTMLFormatterOptions(rawValue: 1 << 1)
+
+    /// Render a soft line break as a `<br />` rather than a newline, so that lines
+    /// broken in the source are broken on the page too.
+    ///
+    /// This mirrors cmark's `CMARK_OPT_HARDBREAKS`, which is a *rendering* option in
+    /// cmark rather than a parsing one — it never reaches the tree, so it belongs
+    /// here rather than in ``ParseOptions``.
+    public static let hardBreaks = HTMLFormatterOptions(rawValue: 1 << 2)
+
+    /// Render a soft line break as a space, collapsing source line breaks entirely.
+    ///
+    /// Mirrors cmark's `CMARK_OPT_NOBREAKS`. Ignored if ``hardBreaks`` is also set.
+    public static let noBreaks = HTMLFormatterOptions(rawValue: 1 << 3)
 }
 
 /// A ``MarkupWalker`` that prints rendered HTML for a given ``Markup`` tree.
@@ -306,7 +319,13 @@ public struct HTMLFormatter: MarkupWalker {
     }
 
     public mutating func visitSoftBreak(_ softBreak: SoftBreak) -> () {
-        result += "\n"
+        if options.contains(.hardBreaks) {
+            result += "<br />\n"
+        } else if options.contains(.noBreaks) {
+            result += " "
+        } else {
+            result += "\n"
+        }
     }
 
     public mutating func visitLink(_ link: Link) -> () {

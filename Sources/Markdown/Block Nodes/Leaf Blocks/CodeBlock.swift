@@ -32,7 +32,16 @@ public extension CodeBlock {
         try! self.init(RawMarkup.codeBlock(parsedRange: nil, code: code, language: language))
     }
 
-    /// The name of the syntax or programming language of the code block, which may be `nil` when unspecified.
+    /// The code fence's info string, which may be `nil` when unspecified.
+    ///
+    /// This is the whole info string, not just the first word: a block opened with
+    ///
+    /// ````markdown
+    /// ```swift title="Example"
+    /// ````
+    ///
+    /// has a `language` of `swift title="Example"`. Use ``languageName`` for the
+    /// leading word on its own, which is what a `language-` class usually wants.
     var language: String? {
         get {
             guard case let .codeBlock(_, language) = _data.raw.markup.data else {
@@ -43,6 +52,18 @@ public extension CodeBlock {
         set {
             _data = _data.replacingSelf(.codeBlock(parsedRange: nil, code: code, language: newValue))
         }
+    }
+
+    /// The leading word of the code fence's ``language`` info string, which is
+    /// conventionally the name of the syntax or programming language.
+    ///
+    /// `nil` when no info string was given, and never includes any metadata that
+    /// follows the language name.
+    var languageName: String? {
+        guard let language, let name = language.split(separator: " ").first else {
+            return nil
+        }
+        return String(name)
     }
 
     /// The raw text representing the code of this block.
