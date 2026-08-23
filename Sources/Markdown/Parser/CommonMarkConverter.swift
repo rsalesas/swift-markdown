@@ -463,12 +463,18 @@ struct MarkupParser {
         if options.contains(.parseFootnotes) {
             cmarkOptions |= CMARK_OPT_FOOTNOTES
         }
+        if options.contains(.strikethroughRequiresTwoTildes) {
+            cmarkOptions |= CMARK_OPT_STRIKETHROUGH_DOUBLE_TILDE
+        }
         
         let parser = cmark_parser_new(cmarkOptions)
         
         cmark_parser_attach_syntax_extension(parser, cmark_find_syntax_extension("table"))
         cmark_parser_attach_syntax_extension(parser, cmark_find_syntax_extension("strikethrough"))
         cmark_parser_attach_syntax_extension(parser, cmark_find_syntax_extension("tasklist"))
+        if options.contains(.parseAutolinks) {
+            cmark_parser_attach_syntax_extension(parser, cmark_find_syntax_extension("autolink"))
+        }
         cmark_parser_feed(parser, string, string.utf8.count)
         let rawDocument = cmark_parser_finish(parser)
         var state = MarkupConverterState(source: source, iterator: cmark_iter_new(rawDocument), event: CMARK_EVENT_NONE, node: nil, options: options, headerSeen: false, pendingTableBody: nil).next()
