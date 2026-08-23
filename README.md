@@ -81,9 +81,14 @@ before you build a renderer on them:
 .package(url: "https://github.com/rsalesas/swift-markdown.git", branch: "main"),
 ```
 
-`main` carries the additions. Each one also lives on its own branch off upstream
-(`footnotes`, `exposed-options`) so it can be offered upstream unchanged, and
-`upstream` is wired to swiftlang so this stays rebaseable rather than drifting.
+`main` carries the additions. Each one also lives on a branch that applies cleanly
+to upstream, so it can be offered there unchanged: `footnotes` and
+`autolink-condensing` sit directly on `upstream/main`, and `exposed-options` stacks
+on `footnotes` because the two touch the same part of `ParseOptions`. `upstream` is
+wired to swiftlang so this stays rebaseable rather than drifting.
+
+The autolink condensing fix is offered upstream as
+[swiftlang/swift-markdown#286](https://github.com/swiftlang/swift-markdown/pull/286).
 
 ## Relationship to upstream
 
