@@ -220,6 +220,22 @@ public protocol MarkupVisitor<Result> {
     mutating func visitStrikethrough(_ strikethrough: Strikethrough) -> Result
 
     /**
+     Visit a `FootnoteDefinition` element and return the result.
+
+     - parameter footnoteDefinition: A `FootnoteDefinition` element.
+     - returns: The result of the visit.
+     */
+    mutating func visitFootnoteDefinition(_ footnoteDefinition: FootnoteDefinition) -> Result
+
+    /**
+     Visit a `FootnoteReference` element and return the result.
+
+     - parameter footnoteReference: A `FootnoteReference` element.
+     - returns: The result of the visit.
+     */
+    mutating func visitFootnoteReference(_ footnoteReference: FootnoteReference) -> Result
+
+    /**
      Visit a `Table` element and return the result.
 
      - parameter table: A `Table` element.
@@ -391,6 +407,12 @@ extension MarkupVisitor {
     }
     public mutating func visitStrikethrough(_ strikethrough: Strikethrough) -> Result {
         return defaultVisit(strikethrough)
+    }
+    public mutating func visitFootnoteDefinition(_ footnoteDefinition: FootnoteDefinition) -> Result {
+        return defaultVisit(footnoteDefinition)
+    }
+    public mutating func visitFootnoteReference(_ footnoteReference: FootnoteReference) -> Result {
+        return defaultVisit(footnoteReference)
     }
     public mutating func visitTable(_ table: Table) -> Result {
         return defaultVisit(table)

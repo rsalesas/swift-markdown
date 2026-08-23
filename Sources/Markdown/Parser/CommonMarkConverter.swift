@@ -62,6 +62,12 @@ fileprivate enum CommonMarkNodeType: String {
 
     case strikethrough
 
+    // Footnotes. cmark has no type strings for these — see `nodeType` below — so
+    // these raw values are what cmark *would* return if it did, and are unused
+    // until it does.
+    case footnoteDefinition = "footnote_definition"
+    case footnoteReference = "footnote_reference"
+
     case table
     case tableHead = "table_header"
     case tableRow = "table_row"
@@ -145,6 +151,18 @@ fileprivate struct MarkupConverterState {
     /// The type of the last parsed cmark node.
     var nodeType: CommonMarkNodeType {
         guard let node = node else { return .none }
+        // Footnote nodes are built into cmark rather than being syntax extensions,
+        // and `cmark_node_get_type_string` has no cases for them — it answers
+        // "<unknown>", which would trap below. The type enum is public API and does
+        // distinguish them, so ask that instead.
+        switch cmark_node_get_type(node) {
+        case CMARK_NODE_FOOTNOTE_DEFINITION:
+            return .footnoteDefinition
+        case CMARK_NODE_FOOTNOTE_REFERENCE:
+            return .footnoteReference
+        default:
+            break
+        }
         let typeString = String(cString: cmark_node_get_type_string(node))
         guard let type = CommonMarkNodeType(rawValue: typeString) else {
             fatalError("Unknown cmark node type '\(typeString)' encountered during conversion")
@@ -288,6 +306,18 @@ struct MarkupParser {
         return .customInline(parsedRange: parsedRange, text: text)
     }
 
+    /// Converts a footnote reference, which carries no children but which cmark's
+    /// iterator still opens and closes like a container rather than a leaf.
+    private static func convertFootnoteReference(node: UnsafeMutablePointer<cmark_node>!, parsedRange: SourceRange?) -> RawMarkup {
+        // A reference's own literal content is not its label: cmark overwrites it
+        // with the assigned footnote *number* while post-processing. The label lives
+        // on the definition the reference was matched to, which cmark hands back
+        // here. An unmatched reference never reaches this point — cmark turns it
+        // back into literal text — so the fallback is belt and braces.
+        let label = cmark_node_parent_footnote_def(node).map { String(cString: cmark_node_get_literal($0)) }
+        return .footnoteReference(footnoteID: label ?? getLiteralContent(node: node), parsedRange: parsedRange)
+    }
+
     /// Converts a leaf cmark node directly into its corresponding `RawMarkup` representation.
     private static func createLeaf(state: MarkupConverterState) -> RawMarkup {
         switch state.nodeType {
@@ -406,6 +436,12 @@ struct MarkupParser {
             let colspan = UInt(cmark_gfm_extensions_get_table_cell_colspan(node))
             let rowspan = UInt(cmark_gfm_extensions_get_table_cell_rowspan(node))
             return .tableCell(parsedRange: parsedRange, colspan: colspan, rowspan: rowspan, children)
+        case .footnoteDefinition:
+            let footnoteID = String(cString: cmark_node_get_literal(node))
+            return .footnoteDefinition(footnoteID: footnoteID, parsedRange: parsedRange, children)
+        case .footnoteReference:
+            precondition(children.isEmpty, "A footnote reference should never have children")
+            return convertFootnoteReference(node: node, parsedRange: parsedRange)
         case .inlineAttributes:
             let attributes = String(cString: cmark_node_get_attributes(node))
             return .inlineAttributes(attributes: attributes, parsedRange: parsedRange, children)
@@ -423,6 +459,9 @@ struct MarkupParser {
         }
         if !options.contains(.disableSourcePosOpts) {
             cmarkOptions |= CMARK_OPT_SOURCEPOS
+        }
+        if options.contains(.parseFootnotes) {
+            cmarkOptions |= CMARK_OPT_FOOTNOTES
         }
         
         let parser = cmark_parser_new(cmarkOptions)

@@ -496,6 +496,11 @@ public struct MarkupFormatter: MarkupWalker {
             if element.parent is BlockDirective {
                 prefix += "    "
             }
+            if element.parent is FootnoteDefinition {
+                // Everything after the definition line is indented under it, which is
+                // what keeps a multi-block note attached to its definition.
+                prefix += "    "
+            }
         }
         return prefix
     }
@@ -903,6 +908,18 @@ public struct MarkupFormatter: MarkupWalker {
         // We can do this because the model differentiates between real Text
         // content and string-like data, such as URLs.
         softWrapPrint(text.string, for: text)
+    }
+
+    public mutating func visitFootnoteDefinition(_ footnoteDefinition: FootnoteDefinition) {
+        if footnoteDefinition.indexInParent > 0 {
+            ensurePrecedingNewlineCount(atLeast: 2)
+        }
+        print("[^\(footnoteDefinition.footnoteID)]: ", for: footnoteDefinition)
+        descendInto(footnoteDefinition)
+    }
+
+    public mutating func visitFootnoteReference(_ footnoteReference: FootnoteReference) {
+        print("[^\(footnoteReference.footnoteID)]", for: footnoteReference)
     }
 
     public mutating func visitStrikethrough(_ strikethrough: Strikethrough) {

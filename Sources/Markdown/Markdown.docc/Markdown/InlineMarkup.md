@@ -11,6 +11,7 @@
 
 ### Inline Leaves
 - ``CustomInline``
+- ``FootnoteReference``
 - ``InlineCode``
 - ``InlineHTML``
 - ``LineBreak``

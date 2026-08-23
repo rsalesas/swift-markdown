@@ -46,6 +46,16 @@ public struct HTMLFormatter: MarkupWalker {
     var tableColumnAlignments: [Table.ColumnAlignment?]? = nil
     var currentTableColumn = 0
 
+    /// Footnote numbers, assigned in order of first reference.
+    ///
+    /// A parsed document already has its definitions in that order, but a tree built
+    /// by hand need not, so the numbering is derived here rather than assumed.
+    var footnoteNumbers: [String: Int] = [:]
+    /// How many times each footnote has been referenced so far, which is what keeps
+    /// the anchor of a twice-referenced note unique.
+    var footnoteReferenceCounts: [String: Int] = [:]
+    var inFootnoteSection = false
+
     public init(options: HTMLFormatterOptions = []) {
         self.options = options
     }
@@ -58,9 +68,20 @@ public struct HTMLFormatter: MarkupWalker {
     }
 
     /// Format HTML for the given input text.
-    public static func format(_ inputString: String, options: HTMLFormatterOptions = []) -> String {
-        let document = Document(parsing: inputString)
+    ///
+    /// - parameter parseOptions: Options for parsing `inputString`. Syntax that is
+    ///   off by default, such as ``ParseOptions/parseFootnotes``, has to be requested
+    ///   here or the formatter never sees it.
+    public static func format(_ inputString: String, options: HTMLFormatterOptions = [], parseOptions: ParseOptions = []) -> String {
+        let document = Document(parsing: inputString, options: parseOptions)
         return format(document, options: options)
+    }
+
+    private mutating func footnoteNumber(for footnoteID: String) -> Int {
+        if let existing = footnoteNumbers[footnoteID] { return existing }
+        let number = footnoteNumbers.count + 1
+        footnoteNumbers[footnoteID] = number
+        return number
     }
 
     // MARK: Block elements
@@ -215,6 +236,33 @@ public struct HTMLFormatter: MarkupWalker {
         result += "</\(element)>\n"
     }
 
+    public mutating func visitDocument(_ document: Document) -> () {
+        descendInto(document)
+        // Definitions are the document's last children, so the list can only be
+        // closed once the whole document has been walked.
+        if inFootnoteSection {
+            result += "</ol>\n</section>\n"
+            inFootnoteSection = false
+        }
+    }
+
+    public mutating func visitFootnoteDefinition(_ footnoteDefinition: FootnoteDefinition) -> () {
+        if !inFootnoteSection {
+            result += "<section class=\"footnotes\" data-footnotes>\n<ol>\n"
+            inFootnoteSection = true
+        }
+        let number = footnoteNumber(for: footnoteDefinition.footnoteID)
+        result += "<li id=\"fn-\(number)\">\n"
+        descendInto(footnoteDefinition)
+        // One back-link per mention, matching the ids written at each reference.
+        let occurrences = footnoteReferenceCounts[footnoteDefinition.footnoteID] ?? 1
+        for occurrence in 1...max(occurrences, 1) {
+            let anchor = occurrence > 1 ? "fnref-\(number)-\(occurrence)" : "fnref-\(number)"
+            result += "<a href=\"#\(anchor)\" class=\"footnote-backref\" data-footnote-backref>\u{21A9}</a>\n"
+        }
+        result += "</li>\n"
+    }
+
     // MARK: Inline elements
 
     mutating func printInline(tag: String, _ content: Markup) {
@@ -279,6 +327,17 @@ public struct HTMLFormatter: MarkupWalker {
 
     public mutating func visitStrikethrough(_ strikethrough: Strikethrough) -> () {
         printInline(tag: "del", strikethrough)
+    }
+
+    public mutating func visitFootnoteReference(_ footnoteReference: FootnoteReference) -> () {
+        let number = footnoteNumber(for: footnoteReference.footnoteID)
+        let occurrence = (footnoteReferenceCounts[footnoteReference.footnoteID] ?? 0) + 1
+        footnoteReferenceCounts[footnoteReference.footnoteID] = occurrence
+        // Every reference is a link target for the note to point back at, so each one
+        // needs its own id — repeating `fnref-1` would be a duplicate id, and the
+        // back-link would always return to the first mention.
+        let anchor = occurrence > 1 ? "fnref-\(number)-\(occurrence)" : "fnref-\(number)"
+        result += "<sup class=\"footnote-ref\"><a href=\"#fn-\(number)\" id=\"\(anchor)\" data-footnote-ref>\(number)</a></sup>"
     }
 
     public mutating func visitSymbolLink(_ symbolLink: SymbolLink) -> () {
