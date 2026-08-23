@@ -44,6 +44,7 @@ options produces exactly the tree upstream produces.
 | `CodeBlock.languageName` | new | the leading word of the info string |
 | `CodeBlock.language` | corrected docs | always was the *whole* info string, e.g. `swift title="Example"`, despite being documented as the language name |
 | `HTMLFormatter.format(_:options:parseOptions:)` | additive | the string overload could not previously be given parse options, so it could never see any of the above |
+| `MarkupFormatter` autolink condensing | bug fix | formatting `[LICENSE.txt](LICENSE.txt)` produced `<LICENSE.txt>`, which parses back as plain text — the link was silently destroyed |
 
 ### Footnotes
 
