@@ -259,6 +259,12 @@ public struct HTMLFormatter: MarkupWalker {
         }
     }
 
+    public mutating func visitBlankLines(_ blankLines: BlankLines) -> () {
+        // Presentational and renderer-specific: HTML has no element for "a gap the
+        // author left", so this emits nothing and a renderer that wants one reads the
+        // node itself.
+    }
+
     public mutating func visitFencedDiv(_ fencedDiv: FencedDiv) -> () {
         var attributes = ""
         if !fencedDiv.classes.isEmpty {

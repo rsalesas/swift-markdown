@@ -53,6 +53,9 @@ public extension Document {
         if options.contains(.parseAttributes) {
             self = AttributeBlockParser.claim(in: self)
         }
+        if options.contains(.preserveBlankLines) {
+            self = BlankLineParser.record(in: self)
+        }
     }
 
     /// Parse a file's contents into a `Document`.
@@ -71,6 +74,9 @@ public extension Document {
         }
         if options.contains(.parseAttributes) {
             self = AttributeBlockParser.claim(in: self)
+        }
+        if options.contains(.preserveBlankLines) {
+            self = BlankLineParser.record(in: self)
         }
     }
 
