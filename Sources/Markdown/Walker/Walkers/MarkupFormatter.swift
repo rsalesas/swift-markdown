@@ -910,6 +910,12 @@ public struct MarkupFormatter: MarkupWalker {
         softWrapPrint(text.string, for: text)
     }
 
+    public mutating func visitBlankLines(_ blankLines: BlankLines) {
+        // Round-trips as the blank lines it came from, so formatting a document does not
+        // quietly close up the gaps the author left.
+        ensurePrecedingNewlineCount(atLeast: 2 + blankLines.count)
+    }
+
     public mutating func visitFencedDiv(_ fencedDiv: FencedDiv) {
         if fencedDiv.indexInParent > 0 {
             ensurePrecedingNewlineCount(atLeast: 2)

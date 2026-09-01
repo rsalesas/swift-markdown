@@ -45,6 +45,7 @@ enum RawMarkupData: Equatable {
     // Extensions
     case strikethrough
 
+    case blankLines(count: Int)
     case fencedDiv(attributeText: String)
     case footnoteDefinition(footnoteID: String)
     case footnoteReference(footnoteID: String)
@@ -350,6 +351,10 @@ final class RawMarkup: ManagedBuffer<RawMarkupHeader, RawMarkup> {
 
     static func strikethrough(parsedRange: SourceRange?, _ children: [RawMarkup]) -> RawMarkup {
         return .create(data: .strikethrough, parsedRange: parsedRange, children: children)
+    }
+
+    static func blankLines(count: Int, parsedRange: SourceRange?) -> RawMarkup {
+        return .create(data: .blankLines(count: count), parsedRange: parsedRange, children: [])
     }
 
     static func fencedDiv(attributeText: String, parsedRange: SourceRange?, _ children: [RawMarkup]) -> RawMarkup {

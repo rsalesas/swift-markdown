@@ -57,6 +57,8 @@ func makeMarkup(_ data: _MarkupData) -> Markup {
         return Text(data)
     case .strikethrough:
         return Strikethrough(data)
+    case .blankLines:
+        return BlankLines(data)
     case .fencedDiv:
         return FencedDiv(data)
     case .footnoteDefinition:

@@ -91,5 +91,17 @@ public struct ParseOptions: OptionSet, Sendable {
     /// bare word anywhere inside the braces means it is prose, and `# Chapter {see note
     /// 4}` keeps its words.
     public static let parseAttributes = ParseOptions(rawValue: 1 << 9)
+
+    /// Record runs of blank lines between blocks as ``BlankLines`` elements.
+    ///
+    /// CommonMark treats one blank line and five as the same paragraph break and throws
+    /// the difference away. That is right for a document meant to be read on the web and
+    /// wrong for one meant to be printed, where the gaps an author left are a large part
+    /// of how a letter or a signing page is laid out.
+    ///
+    /// > Note: Read from the parsed tree, so a blank line inside a code block is never
+    /// counted — it is inside the block's range rather than between two of them, which
+    /// holds for indented code and for a fence of any length or marker.
+    public static let preserveBlankLines = ParseOptions(rawValue: 1 << 10)
 }
 

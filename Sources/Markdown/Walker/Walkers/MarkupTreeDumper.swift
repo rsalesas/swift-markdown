@@ -291,6 +291,10 @@ struct MarkupTreeDumper: MarkupWalker {
         dump(doxygenParam, customDescription: "parameter: \(doxygenParam.name)")
     }
 
+    mutating func visitBlankLines(_ blankLines: BlankLines) {
+        dump(blankLines, customDescription: "count: \(blankLines.count)")
+    }
+
     mutating func visitFencedDiv(_ fencedDiv: FencedDiv) {
         dump(fencedDiv, customDescription: "attributeText: \(fencedDiv.attributeText)")
     }
