@@ -55,7 +55,7 @@ public extension Image {
     /// The image's source.
     var source: String? {
       get {
-        guard case let .image(source, _) = _data.raw.markup.data else {
+        guard case let .image(source, _, _) = _data.raw.markup.data else {
             fatalError("\(self) markup wrapped unexpected \(_data.raw)")
         }
         return source
@@ -65,17 +65,37 @@ public extension Image {
             return
         }
         if let s = newValue, s.isEmpty {
-            _data = _data.replacingSelf(.image(source: nil, title: title, parsedRange: nil, _data.raw.markup.copyChildren()))
+            _data = _data.replacingSelf(.image(source: nil, title: title, attributes: attributes, parsedRange: nil, _data.raw.markup.copyChildren()))
         } else {
-            _data = _data.replacingSelf(.image(source: newValue, title: title, parsedRange: nil, _data.raw.markup.copyChildren()))
+            _data = _data.replacingSelf(.image(source: newValue, title: title, attributes: attributes, parsedRange: nil, _data.raw.markup.copyChildren()))
         }
       }
+    }
+
+    /// Pandoc's attribute block after the image, verbatim and without its braces:
+    /// `width=40% .right` for `![a](b.png){width=40% .right}`, or nil when there was
+    /// none.
+    ///
+    /// Requires ``ParseOptions/parseAttributes``. Markdown says nothing about how big a
+    /// picture should be or where it sits, which is the one thing an author reaches for
+    /// and cannot express.
+    var attributes: String? {
+        get {
+            guard case let .image(_, _, attributes) = _data.raw.markup.data else {
+                fatalError("\(self) markup wrapped unexpected \(_data.raw)")
+            }
+            return attributes
+        }
+        set {
+            guard attributes != newValue else { return }
+            _data = _data.replacingSelf(.image(source: source, title: title, attributes: newValue, parsedRange: nil, _data.raw.markup.copyChildren()))
+        }
     }
 
     /// The image's title.
     var title: String? {
       get {
-        guard case let .image(_, title) = _data.raw.markup.data else {
+        guard case let .image(_, title, _) = _data.raw.markup.data else {
             fatalError("\(self) markup wrapped unexpected \(_data.raw)")
         }
         return title
@@ -88,7 +108,7 @@ public extension Image {
         if let t = newValue, t.isEmpty {
                 _data = _data.replacingSelf(.image(source: source, title: nil, parsedRange: nil, _data.raw.markup.copyChildren()))
         } else {
-            _data = _data.replacingSelf(.image(source: source, title: newValue, parsedRange: nil, _data.raw.markup.copyChildren()))
+            _data = _data.replacingSelf(.image(source: source, title: newValue, attributes: attributes, parsedRange: nil, _data.raw.markup.copyChildren()))
         }
       }
     }

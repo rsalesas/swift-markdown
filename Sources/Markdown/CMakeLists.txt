@@ -58,6 +58,7 @@ add_library(Markdown
   "Inline Nodes/Inline Leaves/SymbolLink.swift"
   "Inline Nodes/Inline Leaves/Text.swift"
   "Interpretive Nodes/Aside.swift"
+  Parser/AttributeBlockParser.swift
   Parser/BlockDirectiveParser.swift
   Parser/FencedDivParser.swift
   Parser/CommonMarkConverter.swift

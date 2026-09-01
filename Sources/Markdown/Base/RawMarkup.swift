@@ -20,7 +20,7 @@ enum RawMarkupData: Equatable {
     case codeBlock(String, language: String?)
     case customBlock
     case document
-    case heading(level: Int)
+    case heading(level: Int, attributes: String?)
     case thematicBreak
     case htmlBlock(String)
     case listItem(checkbox: Checkbox?)
@@ -32,7 +32,7 @@ enum RawMarkupData: Equatable {
     case inlineCode(String)
     case customInline(String)
     case emphasis
-    case image(source: String?, title: String?)
+    case image(source: String?, title: String?, attributes: String?)
     case inlineHTML(String)
     case lineBreak
     case link(destination: String?, title: String?)
@@ -264,8 +264,8 @@ final class RawMarkup: ManagedBuffer<RawMarkupHeader, RawMarkup> {
         return .create(data: .document, parsedRange: parsedRange, children: children)
     }
 
-    static func heading(level: Int, parsedRange: SourceRange?, _ children: [RawMarkup]) -> RawMarkup {
-        return .create(data: .heading(level: level), parsedRange: parsedRange, children: children)
+    static func heading(level: Int, attributes: String? = nil, parsedRange: SourceRange?, _ children: [RawMarkup]) -> RawMarkup {
+        return .create(data: .heading(level: level, attributes: attributes), parsedRange: parsedRange, children: children)
     }
 
     static func thematicBreak(parsedRange: SourceRange?) -> RawMarkup {
@@ -310,8 +310,8 @@ final class RawMarkup: ManagedBuffer<RawMarkupHeader, RawMarkup> {
         return .create(data: .emphasis, parsedRange: parsedRange, children: children)
     }
 
-    static func image(source: String?, title: String?, parsedRange: SourceRange?, _ children: [RawMarkup]) -> RawMarkup {
-        return .create(data: .image(source: source, title: title), parsedRange: parsedRange, children: children)
+    static func image(source: String?, title: String?, attributes: String? = nil, parsedRange: SourceRange?, _ children: [RawMarkup]) -> RawMarkup {
+        return .create(data: .image(source: source, title: title, attributes: attributes), parsedRange: parsedRange, children: children)
     }
 
     static func inlineHTML(parsedRange: SourceRange?, html: String) -> RawMarkup {

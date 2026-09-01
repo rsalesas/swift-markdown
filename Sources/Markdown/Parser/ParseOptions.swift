@@ -76,5 +76,20 @@ public struct ParseOptions: OptionSet, Sendable {
     /// *not* recognised — placing a container inside another container needs
     /// continuation logic that only the underlying C parser has.
     public static let parseFencedDivs = ParseOptions(rawValue: 1 << 8)
+
+    /// Enable Pandoc's attribute blocks on headings and images.
+    ///
+    ///     # Preface {.unnumbered}
+    ///     ![Chart](chart.png){width=40% .right}
+    ///
+    /// The block is taken off the element's text and onto ``Heading/attributes`` or
+    /// ``Image/attributes``, so it is removed exactly once and an element can never be
+    /// found carrying it in one form and not the other.
+    ///
+    /// > Note: Claimed from the parsed tree rather than from the source text, so a block
+    /// inside a code sample is left exactly as the author wrote it. Parsing is strict: a
+    /// bare word anywhere inside the braces means it is prose, and `# Chapter {see note
+    /// 4}` keeps its words.
+    public static let parseAttributes = ParseOptions(rawValue: 1 << 9)
 }
 
