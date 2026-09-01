@@ -54,18 +54,33 @@ enum FencedDivParser {
 
         let opaque = opaqueLines(of: first)
         var lines = input.components(separatedBy: "\n")
-        var markers: [Marker] = []
+        var candidates: [Marker] = []
         for index in lines.indices {
             let number = index + 1
             guard !opaque.contains(number), let marker = self.marker(on: lines[index], line: number)
             else { continue }
-            markers.append(marker)
-            // Blank the whole line. A blank line is a block separator, which is what the
-            // marker was standing in for anyway, and it leaves every other line's number
-            // and columns untouched.
-            lines[index] = ""
+            candidates.append(marker)
+        }
+
+        // A closer with nothing open closes nothing — it is text the author wrote, and
+        // it has to survive into the document. Work out which markers actually do
+        // something BEFORE blanking any line, or a stray `:::` is silently deleted.
+        var depth = 0
+        let markers = candidates.filter { marker in
+            if marker.isOpener {
+                depth += 1
+                return true
+            }
+            guard depth > 0 else { return false }
+            depth -= 1
+            return true
         }
         guard !markers.isEmpty else { return first }
+
+        // Blank the whole line. A blank line is a block separator, which is what the
+        // marker was standing in for anyway, and it leaves every other line's number
+        // and columns untouched.
+        for marker in markers { lines[marker.line - 1] = "" }
 
         let second = MarkupParser.parseString(lines.joined(separator: "\n"), source: source, options: options)
         return nest(second, by: markers)
@@ -141,9 +156,8 @@ enum FencedDivParser {
                 append([.fencedDiv(attributeText: open.marker.attributeText,
                                    parsedRange: nil, open.collected)])
             }
-            // A closer with nothing open is not an error: the line was blanked, so it has
-            // already vanished from the output, which is the same as the author's `:::`
-            // being taken as content. Nothing further to do.
+            // Every closer reaching here matches an opener: the stray ones were filtered
+            // out above and left in the text as the content they are.
         }
         append(take(before: Int.max))
 

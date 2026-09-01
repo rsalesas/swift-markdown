@@ -194,12 +194,17 @@ final class FencedDivTests: XCTestCase {
         XCTAssertEqual(expected, Document(parsing: source, options: .parseFencedDivs).debugDescription())
     }
 
-    func testStrayCloserIsDropped() {
+    /// A closer with nothing open closes nothing, so it is text the author wrote and it
+    /// stays. Blanking it because it looks like a marker would delete a line of someone's
+    /// document.
+    func testStrayCloserIsContent() {
         let source = "Text.\n\n:::\n\nMore."
         let expected = """
             Document
             ├─ Paragraph
             │  └─ Text "Text."
+            ├─ Paragraph
+            │  └─ Text ":::"
             └─ Paragraph
                └─ Text "More."
             """
