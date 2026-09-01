@@ -45,6 +45,8 @@ public extension Document {
         if options.contains(.parseBlockDirectives) {
             self = BlockDirectiveParser.parse(string, source: source,
                                               options: options)
+        } else if options.contains(.parseFencedDivs) {
+            self = FencedDivParser.parse(string, source: source, options: options)
         } else {
             self = MarkupParser.parseString(string, source: source, options: options)
         }
@@ -59,6 +61,8 @@ public extension Document {
         if options.contains(.parseBlockDirectives) {
             self = BlockDirectiveParser.parse(string, source: file,
                                               options: options)
+        } else if options.contains(.parseFencedDivs) {
+            self = FencedDivParser.parse(string, source: file, options: options)
         } else {
             self = MarkupParser.parseString(string, source: file, options: options)
         }

@@ -225,6 +225,11 @@ public protocol MarkupVisitor<Result> {
      - parameter footnoteDefinition: A `FootnoteDefinition` element.
      - returns: The result of the visit.
      */
+    /// Visit a `FencedDiv` element and return the result.
+    /// - parameter fencedDiv: A `FencedDiv` element.
+    /// - returns: The result of the visit.
+    mutating func visitFencedDiv(_ fencedDiv: FencedDiv) -> Result
+
     mutating func visitFootnoteDefinition(_ footnoteDefinition: FootnoteDefinition) -> Result
 
     /**
@@ -408,6 +413,10 @@ extension MarkupVisitor {
     public mutating func visitStrikethrough(_ strikethrough: Strikethrough) -> Result {
         return defaultVisit(strikethrough)
     }
+    public mutating func visitFencedDiv(_ fencedDiv: FencedDiv) -> Result {
+        return defaultVisit(fencedDiv)
+    }
+
     public mutating func visitFootnoteDefinition(_ footnoteDefinition: FootnoteDefinition) -> Result {
         return defaultVisit(footnoteDefinition)
     }

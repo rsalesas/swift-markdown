@@ -910,6 +910,17 @@ public struct MarkupFormatter: MarkupWalker {
         softWrapPrint(text.string, for: text)
     }
 
+    public mutating func visitFencedDiv(_ fencedDiv: FencedDiv) {
+        if fencedDiv.indexInParent > 0 {
+            ensurePrecedingNewlineCount(atLeast: 2)
+        }
+        print("::: \(fencedDiv.attributeText)", for: fencedDiv)
+        ensurePrecedingNewlineCount(atLeast: 1)
+        descendInto(fencedDiv)
+        ensurePrecedingNewlineCount(atLeast: 1)
+        print(":::", for: fencedDiv)
+    }
+
     public mutating func visitFootnoteDefinition(_ footnoteDefinition: FootnoteDefinition) {
         if footnoteDefinition.indexInParent > 0 {
             ensurePrecedingNewlineCount(atLeast: 2)

@@ -60,5 +60,21 @@ public struct ParseOptions: OptionSet, Sendable {
     /// is configured this way, so a document written against GitHub may contain
     /// single tildes it never meant as markup.
     public static let strikethroughRequiresTwoTildes = ParseOptions(rawValue: 1 << 7)
+
+    /// Enable Pandoc's fenced divs — `::: name` … `:::` — as ``FencedDiv`` elements.
+    ///
+    /// Markdown has no way to say "this run of blocks belongs together", which is what a
+    /// callout, a signature panel or a column needs. Pandoc settled this with colon
+    /// fences, and this is that syntax.
+    ///
+    /// Composes with ``parseBlockDirectives``: the two are independent syntaxes, and a
+    /// fenced div may appear inside a block directive.
+    ///
+    /// > Note: A marker inside a code block is content, which this determines by parsing
+    /// once and asking where the code blocks are rather than by tracking fences. A
+    /// marker that is indented inside a list item or prefixed by a block quote's `>` is
+    /// *not* recognised — placing a container inside another container needs
+    /// continuation logic that only the underlying C parser has.
+    public static let parseFencedDivs = ParseOptions(rawValue: 1 << 8)
 }
 
