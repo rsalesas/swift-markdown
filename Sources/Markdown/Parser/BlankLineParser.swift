@@ -32,17 +32,20 @@ enum BlankLineParser {
 
     /// Insert a ``BlankLines`` between every pair of blocks the author separated by more
     /// than one blank line.
-    static func record(in document: Document) -> Document {
-        guard let rebuilt = insertBlankLines(into: document) as? Document else { return document }
+    static func record(in document: Document, source: String) -> Document {
+        let lines = source.components(separatedBy: "\n")
+        guard let rebuilt = insertBlankLines(into: document, lines: lines) as? Document
+        else { return document }
         return rebuilt
     }
 
-    private static func insertBlankLines(into markup: Markup) -> Markup {
+    private static func insertBlankLines(into markup: Markup, lines: [String]) -> Markup {
         // Only between block-level siblings. Inline content has no lines to leave blank,
         // and a list's items are separated by its own loose/tight rule rather than by
         // anything an author can space out.
         let children = markup.children.map { child -> Markup in
-            child is BlockContainer || child is Document ? insertBlankLines(into: child) : child
+            child is BlockContainer || child is Document
+                ? insertBlankLines(into: child, lines: lines) : child
         }
         guard markup is Document || markup is BlockQuote || markup is FencedDiv else {
             return markup.withUncheckedChildren(children)
@@ -50,7 +53,9 @@ enum BlankLineParser {
 
         var rebuilt: [Markup] = []
         for (index, child) in children.enumerated() {
-            if index > 0, let count = blankLines(between: children[index - 1], and: child), count > 0 {
+            if index > 0,
+               let count = blankLines(between: children[index - 1], and: child, lines: lines),
+               count > 0 {
                 rebuilt.append(BlankLines(count: count))
             }
             rebuilt.append(child)
@@ -63,9 +68,21 @@ enum BlankLineParser {
     ///
     /// The first blank line is the paragraph break itself and is not space; only what the
     /// author added beyond it is.
-    private static func blankLines(between previous: Markup, and next: Markup) -> Int? {
-        guard let end = previous.range?.upperBound.line,
+    ///
+    /// A block's reported end is not where its content ends. cmark hands back
+    /// `ThematicBreak 4…6` for a rule on line 4 followed by two blank lines, and
+    /// `UnorderedList 1…3` for a list whose last item is on line 2 — some blocks swallow
+    /// the blank lines after them and some do not. So the end is clamped back to the last
+    /// line that actually has something on it, and the gap is measured from there.
+    private static func blankLines(between previous: Markup, and next: Markup,
+                                   lines: [String]) -> Int? {
+        guard let reportedEnd = previous.range?.upperBound.line,
               let start = next.range?.lowerBound.line else { return nil }
+        var end = min(reportedEnd, start - 1)
+        while end > 0, end <= lines.count,
+              lines[end - 1].trimmingCharacters(in: .whitespaces).isEmpty {
+            end -= 1
+        }
         return max(0, (start - end) - 2)
     }
 }

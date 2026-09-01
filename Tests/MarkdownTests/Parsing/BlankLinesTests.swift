@@ -84,6 +84,17 @@ final class BlankLinesTests: XCTestCase {
         XCTAssertTrue(code.code.contains("a\n\n\nb"), code.code)
     }
 
+    /// cmark reports `ThematicBreak 4…6` for a rule followed by two blank lines, and
+    /// `UnorderedList 1…3` for a list whose last item is on line 2 — some blocks swallow
+    /// the blanks after them and some do not. Measuring from the reported end loses the
+    /// gap after exactly those blocks, which is a rule before a heading: the shape at the
+    /// end of half the documents anyone writes.
+    func testAGapAfterABlockThatSwallowsItsBlankLines() {
+        XCTAssertEqual([1], counts("Text.\n\n---\n\n\n## Heading"), "after a thematic break")
+        XCTAssertEqual([1], counts("- a\n- b\n\n\n## Heading"), "after a list")
+        XCTAssertEqual([2], counts("> quoted\n\n\n\n## Heading"), "after a block quote")
+    }
+
     // MARK: - Edges
 
     func testLeadingAndTrailingRunsRecordNothing() {

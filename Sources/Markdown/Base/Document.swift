@@ -54,7 +54,7 @@ public extension Document {
             self = AttributeBlockParser.claim(in: self)
         }
         if options.contains(.preserveBlankLines) {
-            self = BlankLineParser.record(in: self)
+            self = BlankLineParser.record(in: self, source: string)
         }
     }
 
@@ -76,7 +76,7 @@ public extension Document {
             self = AttributeBlockParser.claim(in: self)
         }
         if options.contains(.preserveBlankLines) {
-            self = BlankLineParser.record(in: self)
+            self = BlankLineParser.record(in: self, source: string)
         }
     }
 
