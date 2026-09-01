@@ -243,6 +243,11 @@ public protocol MarkupVisitor<Result> {
      - parameter footnoteReference: A `FootnoteReference` element.
      - returns: The result of the visit.
      */
+    /// Visit an `InlineComment` element and return the result.
+    /// - parameter inlineComment: An `InlineComment` element.
+    /// - returns: The result of the visit.
+    mutating func visitInlineComment(_ inlineComment: InlineComment) -> Result
+
     mutating func visitFootnoteReference(_ footnoteReference: FootnoteReference) -> Result
 
     /**
@@ -429,6 +434,10 @@ extension MarkupVisitor {
     public mutating func visitFootnoteDefinition(_ footnoteDefinition: FootnoteDefinition) -> Result {
         return defaultVisit(footnoteDefinition)
     }
+    public mutating func visitInlineComment(_ inlineComment: InlineComment) -> Result {
+        return defaultVisit(inlineComment)
+    }
+
     public mutating func visitFootnoteReference(_ footnoteReference: FootnoteReference) -> Result {
         return defaultVisit(footnoteReference)
     }

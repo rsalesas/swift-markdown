@@ -367,6 +367,13 @@ public struct HTMLFormatter: MarkupWalker {
         printInline(tag: "del", strikethrough)
     }
 
+    public mutating func visitInlineComment(_ inlineComment: InlineComment) -> () {
+        // Nothing. A comment is editorial, and this formatter's output is a document —
+        // emitting even an HTML comment would ship a reviewer's notes to whoever reads
+        // the page source. Dropped on purpose, and pinned by a test, so that "deliberate"
+        // and "the visitor default nobody implemented" cannot be mistaken for each other.
+    }
+
     public mutating func visitFootnoteReference(_ footnoteReference: FootnoteReference) -> () {
         let number = footnoteNumber(for: footnoteReference.footnoteID)
         let occurrence = (footnoteReferenceCounts[footnoteReference.footnoteID] ?? 0) + 1

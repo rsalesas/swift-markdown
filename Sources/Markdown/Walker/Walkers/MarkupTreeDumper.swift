@@ -303,6 +303,10 @@ struct MarkupTreeDumper: MarkupWalker {
         dump(footnoteDefinition, customDescription: "footnoteID: \(footnoteDefinition.footnoteID)")
     }
 
+    mutating func visitInlineComment(_ inlineComment: InlineComment) {
+        dump(inlineComment, customDescription: "body: \(inlineComment.body)")
+    }
+
     mutating func visitFootnoteReference(_ footnoteReference: FootnoteReference) {
         dump(footnoteReference, customDescription: "footnoteID: \(footnoteReference.footnoteID)")
     }
