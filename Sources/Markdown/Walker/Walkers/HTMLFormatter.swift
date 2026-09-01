@@ -259,6 +259,19 @@ public struct HTMLFormatter: MarkupWalker {
         }
     }
 
+    public mutating func visitFencedDiv(_ fencedDiv: FencedDiv) -> () {
+        var attributes = ""
+        if !fencedDiv.classes.isEmpty {
+            attributes += " class=\"\(fencedDiv.classes.joined(separator: " "))\""
+        }
+        if let identifier = fencedDiv.identifier {
+            attributes += " id=\"\(identifier)\""
+        }
+        result += "<div\(attributes)>\n"
+        descendInto(fencedDiv)
+        result += "</div>\n"
+    }
+
     public mutating func visitFootnoteDefinition(_ footnoteDefinition: FootnoteDefinition) -> () {
         if !inFootnoteSection {
             result += "<section class=\"footnotes\" data-footnotes>\n<ol>\n"

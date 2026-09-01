@@ -291,6 +291,10 @@ struct MarkupTreeDumper: MarkupWalker {
         dump(doxygenParam, customDescription: "parameter: \(doxygenParam.name)")
     }
 
+    mutating func visitFencedDiv(_ fencedDiv: FencedDiv) {
+        dump(fencedDiv, customDescription: "attributeText: \(fencedDiv.attributeText)")
+    }
+
     mutating func visitFootnoteDefinition(_ footnoteDefinition: FootnoteDefinition) {
         dump(footnoteDefinition, customDescription: "footnoteID: \(footnoteDefinition.footnoteID)")
     }
