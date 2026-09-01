@@ -125,23 +125,31 @@ enum AttributeBlockParser {
 
     private struct Rewriter: MarkupRewriter {
         mutating func visitHeading(_ heading: Heading) -> Markup? {
-            let children = Array(heading.children).compactMap { visit($0) as? InlineMarkup }
+            // The image pass runs first. A heading that ends in an image carrying a
+            // block — `# Figure ![](chart.png){.right}` — is the image's, not the
+            // heading's: taking it for the heading would put `.right` on the h1, and a
+            // `{.unnumbered}` there would silently unnumber the section.
+            let children = claimImages(in: Array(heading.children).compactMap { visit($0) })
             guard let last = children.last as? Text,
                   let found = AttributeBlockParser.trailing(last.string) else {
-                return heading
+                return heading.withUncheckedChildren(children)
             }
             var updated = children
             updated[updated.count - 1] = Text(String(last.string.dropLast(found.raw.count)))
-            var result = Heading(level: heading.level, updated)
+            var result = Heading(level: heading.level, updated.compactMap { $0 as? InlineMarkup })
             result.attributes = found.attributes
             return result
         }
 
-        /// An image's block arrives as the head of the `Text` node after it, because
-        /// cmark has no idea the braces belong to the image. The two are siblings here,
-        /// which is the only place the pairing is visible.
         mutating func defaultVisit(_ markup: Markup) -> Markup? {
-            let children = markup.children.compactMap { visit($0) }
+            markup.withUncheckedChildren(claimImages(in: markup.children.compactMap { visit($0) }))
+        }
+
+        /// An image's block arrives as the head of the `Text` node after it, because
+        /// cmark has no idea the braces belong to the image. Being siblings is the only
+        /// place the pairing is visible, so it has to happen wherever children are
+        /// rebuilt — not only in `defaultVisit`, or a heading's own children never see it.
+        private func claimImages(in children: [Markup]) -> [Markup] {
             var rebuilt: [Markup] = []
             var index = 0
             while index < children.count {
@@ -158,7 +166,7 @@ enum AttributeBlockParser {
                 rebuilt.append(children[index])
                 index += 1
             }
-            return markup.withUncheckedChildren(rebuilt)
+            return rebuilt
         }
     }
 }

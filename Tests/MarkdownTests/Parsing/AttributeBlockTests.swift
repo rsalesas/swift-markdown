@@ -134,6 +134,28 @@ final class AttributeBlockTests: XCTestCase {
         XCTAssertEqual(1, heading.children.compactMap { $0 as? InlineCode }.count)
     }
 
+    // MARK: - An image inside a heading owns its own block
+
+    /// `# Figure ![](chart.png){.right}` — the block belongs to the image. Taking it for
+    /// the heading would put `.right` on the h1, and `{.unnumbered}` there would silently
+    /// unnumber the section.
+    func testAnImageEndingAHeadingKeepsItsOwnBlock() {
+        let document = parse("# Figure ![](chart.png){.right}")
+        let heading = document.child(at: 0) as! Heading
+        XCTAssertNil(heading.attributes, "the heading must not take it")
+        let image = heading.children.compactMap { $0 as? Image }.first
+        XCTAssertEqual(".right", image?.attributes)
+        XCTAssertEqual("Figure", heading.plainText.trimmingCharacters(in: .whitespaces),
+                       "and the block is off the heading's text either way")
+    }
+
+    func testAHeadingEndingInWordsStillClaimsItsOwnBlock() {
+        let document = parse("# Figure ![](c.png) and more {.wide}")
+        let heading = document.child(at: 0) as! Heading
+        XCTAssertEqual(".wide", heading.attributes)
+        XCTAssertNil(heading.children.compactMap { $0 as? Image }.first?.attributes)
+    }
+
     // MARK: - Composition
 
     func testHeadingsInsideFencedDivsAreClaimedToo() {
