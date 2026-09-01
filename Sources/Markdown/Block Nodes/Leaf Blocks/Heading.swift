@@ -38,7 +38,7 @@ public extension Heading {
     /// The level of the heading, starting at `1`.
     var level: Int {
         get {
-            guard case let .heading(level) = _data.raw.markup.data else {
+            guard case let .heading(level, _) = _data.raw.markup.data else {
                 fatalError("\(self) markup wrapped unexpected \(_data.raw)")
             }
             return level
@@ -48,7 +48,27 @@ public extension Heading {
             guard level != newValue else {
                 return
             }
-            _data = _data.replacingSelf(.heading(level: newValue, parsedRange: nil, _data.raw.markup.copyChildren()))
+            _data = _data.replacingSelf(.heading(level: newValue, attributes: attributes, parsedRange: nil, _data.raw.markup.copyChildren()))
+        }
+    }
+
+    /// Pandoc's attribute block on the heading, verbatim and without its braces:
+    /// `.unnumbered` for `# Preface {.unnumbered}`, or nil when there was none.
+    ///
+    /// Requires ``ParseOptions/parseAttributes``. The block is taken off the heading's
+    /// text when it is parsed, so ``Heading`` never carries it twice — a renderer reads
+    /// the words from the children and the attributes from here, and the two cannot
+    /// disagree about where one ends and the other begins.
+    var attributes: String? {
+        get {
+            guard case let .heading(_, attributes) = _data.raw.markup.data else {
+                fatalError("\(self) markup wrapped unexpected \(_data.raw)")
+            }
+            return attributes
+        }
+        set {
+            guard attributes != newValue else { return }
+            _data = _data.replacingSelf(.heading(level: level, attributes: newValue, parsedRange: nil, _data.raw.markup.copyChildren()))
         }
     }
 

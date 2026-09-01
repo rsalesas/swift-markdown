@@ -50,6 +50,9 @@ public extension Document {
         } else {
             self = MarkupParser.parseString(string, source: source, options: options)
         }
+        if options.contains(.parseAttributes) {
+            self = AttributeBlockParser.claim(in: self)
+        }
     }
 
     /// Parse a file's contents into a `Document`.
@@ -65,6 +68,9 @@ public extension Document {
             self = FencedDivParser.parse(string, source: file, options: options)
         } else {
             self = MarkupParser.parseString(string, source: file, options: options)
+        }
+        if options.contains(.parseAttributes) {
+            self = AttributeBlockParser.claim(in: self)
         }
     }
 
