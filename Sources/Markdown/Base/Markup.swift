@@ -63,6 +63,8 @@ func makeMarkup(_ data: _MarkupData) -> Markup {
         return FencedDiv(data)
     case .footnoteDefinition:
         return FootnoteDefinition(data)
+    case .inlineComment:
+        return InlineComment(data)
     case .footnoteReference:
         return FootnoteReference(data)
     case .table:

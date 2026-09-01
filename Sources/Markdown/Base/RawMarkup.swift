@@ -49,6 +49,7 @@ enum RawMarkupData: Equatable {
     case fencedDiv(attributeText: String)
     case footnoteDefinition(footnoteID: String)
     case footnoteReference(footnoteID: String)
+    case inlineComment(body: String)
 
     // `alignments` indicate the fixed column count of every row in the table.
     case table(columnAlignments: [Table.ColumnAlignment?])
@@ -367,6 +368,10 @@ final class RawMarkup: ManagedBuffer<RawMarkupHeader, RawMarkup> {
 
     static func footnoteReference(footnoteID: String, parsedRange: SourceRange?) -> RawMarkup {
         return .create(data: .footnoteReference(footnoteID: footnoteID), parsedRange: parsedRange, children: [])
+    }
+
+    static func inlineComment(body: String, parsedRange: SourceRange?) -> RawMarkup {
+        return .create(data: .inlineComment(body: body), parsedRange: parsedRange, children: [])
     }
 
     static func table(columnAlignments: [Table.ColumnAlignment?], parsedRange: SourceRange?, header: RawMarkup, body: RawMarkup) -> RawMarkup {

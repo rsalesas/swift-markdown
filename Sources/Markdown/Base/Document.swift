@@ -53,6 +53,9 @@ public extension Document {
         if options.contains(.parseAttributes) {
             self = AttributeBlockParser.claim(in: self)
         }
+        if options.contains(.parseComments) {
+            self = CriticMarkupParser.claim(in: self)
+        }
         if options.contains(.preserveBlankLines) {
             self = BlankLineParser.record(in: self, source: string)
         }
@@ -74,6 +77,9 @@ public extension Document {
         }
         if options.contains(.parseAttributes) {
             self = AttributeBlockParser.claim(in: self)
+        }
+        if options.contains(.parseComments) {
+            self = CriticMarkupParser.claim(in: self)
         }
         if options.contains(.preserveBlankLines) {
             self = BlankLineParser.record(in: self, source: string)

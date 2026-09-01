@@ -103,5 +103,16 @@ public struct ParseOptions: OptionSet, Sendable {
     /// counted — it is inside the block's range rather than between two of them, which
     /// holds for indented code and for a fence of any length or marker.
     public static let preserveBlankLines = ParseOptions(rawValue: 1 << 10)
+
+    /// Enable CriticMarkup comments — `{>> … <<}` — as ``InlineComment`` elements.
+    ///
+    /// A comment is *about* the document rather than part of it. Markdown has no way to say
+    /// that, so a comment is either a separate file nothing else can read, or a convention;
+    /// CriticMarkup is the convention.
+    ///
+    /// > Note: claimed from the parsed tree, so a comment inside a code sample of any kind
+    /// is left exactly as written. A comment cannot span a line break or contain inline
+    /// markup — see ``InlineComment``.
+    public static let parseComments = ParseOptions(rawValue: 1 << 11)
 }
 

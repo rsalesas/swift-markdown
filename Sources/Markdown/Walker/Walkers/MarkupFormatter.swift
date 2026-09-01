@@ -935,6 +935,11 @@ public struct MarkupFormatter: MarkupWalker {
         descendInto(footnoteDefinition)
     }
 
+    public mutating func visitInlineComment(_ inlineComment: InlineComment) {
+        print("\(CriticMarkupParser.opener) \(inlineComment.body) \(CriticMarkupParser.closer)",
+              for: inlineComment)
+    }
+
     public mutating func visitFootnoteReference(_ footnoteReference: FootnoteReference) {
         print("[^\(footnoteReference.footnoteID)]", for: footnoteReference)
     }
