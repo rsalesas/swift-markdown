@@ -39,15 +39,27 @@ enum BlankLineParser {
         return rebuilt
     }
 
+    /// Nodes that gained nothing are handed back untouched.
+    ///
+    /// `withUncheckedChildren` rebuilds the node AND every ancestor above it, and rebuilding
+    /// an ancestor copies that ancestor's entire child list — so rebuilding every node in a
+    /// document costs the document squared, even one with no blank lines to record anywhere
+    /// in it. See `CriticMarkupParser.Rewriter`, which had the same shape and the same cost.
     private static func insertBlankLines(into markup: Markup, lines: [String]) -> Markup {
         // Only between block-level siblings. Inline content has no lines to leave blank,
         // and a list's items are separated by its own loose/tight rule rather than by
         // anything an author can space out.
+        var changed = false
         let children = markup.children.map { child -> Markup in
-            child is BlockContainer || child is Document
-                ? insertBlankLines(into: child, lines: lines) : child
+            guard child is BlockContainer || child is Document else { return child }
+            let visited = insertBlankLines(into: child, lines: lines)
+            // Identity, not equality: a child returned as the very same raw node is one
+            // this pass found nothing in.
+            if visited.raw.markup !== child.raw.markup { changed = true }
+            return visited
         }
         guard markup is Document || markup is BlockQuote || markup is FencedDiv else {
+            guard changed else { return markup }
             return markup.withUncheckedChildren(children)
         }
 
@@ -57,9 +69,11 @@ enum BlankLineParser {
                let count = blankLines(between: children[index - 1], and: child, lines: lines),
                count > 0 {
                 rebuilt.append(BlankLines(count: count))
+                changed = true
             }
             rebuilt.append(child)
         }
+        guard changed else { return markup }
         return markup.withUncheckedChildren(rebuilt)
     }
 

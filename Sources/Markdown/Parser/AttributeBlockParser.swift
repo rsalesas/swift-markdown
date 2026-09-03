@@ -129,9 +129,12 @@ enum AttributeBlockParser {
             // block — `# Figure ![](chart.png){.right}` — is the image's, not the
             // heading's: taking it for the heading would put `.right` on the h1, and a
             // `{.unnumbered}` there would silently unnumber the section.
-            let children = claimImages(in: Array(heading.children).compactMap { visit($0) })
+            var changed = false
+            let children = claimImages(in: visitChildren(of: heading, changed: &changed),
+                                       changed: &changed)
             guard let last = children.last as? Text,
                   let found = AttributeBlockParser.trailing(last.string) else {
+                guard changed else { return heading }
                 return heading.withUncheckedChildren(children)
             }
             var updated = children
@@ -141,15 +144,40 @@ enum AttributeBlockParser {
             return result
         }
 
+        /// Untouched nodes are handed back untouched.
+        ///
+        /// `withUncheckedChildren` rebuilds the node AND every ancestor above it, and
+        /// rebuilding an ancestor copies that ancestor's entire child list — so rebuilding
+        /// every node in a document costs the document squared, whether or not there was a
+        /// single attribute block in it to find. See `CriticMarkupParser.Rewriter`, which
+        /// had the same shape and the same cost.
         mutating func defaultVisit(_ markup: Markup) -> Markup? {
-            markup.withUncheckedChildren(claimImages(in: markup.children.compactMap { visit($0) }))
+            var changed = false
+            let children = claimImages(in: visitChildren(of: markup, changed: &changed),
+                                       changed: &changed)
+            guard changed else { return markup }
+            return markup.withUncheckedChildren(children)
+        }
+
+        /// Every child visited, and whether any of them came back a different node.
+        /// Identity, not equality: a child returned as the very same raw node is one
+        /// neither pass had any interest in.
+        private mutating func visitChildren(of markup: Markup, changed: inout Bool) -> [Markup] {
+            var out: [Markup] = []
+            out.reserveCapacity(markup.childCount)
+            for child in markup.children {
+                guard let visited = visit(child) else { changed = true; continue }
+                if visited.raw.markup !== child.raw.markup { changed = true }
+                out.append(visited)
+            }
+            return out
         }
 
         /// An image's block arrives as the head of the `Text` node after it, because
         /// cmark has no idea the braces belong to the image. Being siblings is the only
         /// place the pairing is visible, so it has to happen wherever children are
         /// rebuilt — not only in `defaultVisit`, or a heading's own children never see it.
-        private func claimImages(in children: [Markup]) -> [Markup] {
+        private func claimImages(in children: [Markup], changed: inout Bool) -> [Markup] {
             var rebuilt: [Markup] = []
             var index = 0
             while index < children.count {
@@ -160,6 +188,7 @@ enum AttributeBlockParser {
                     updated.attributes = found.attributes
                     rebuilt.append(updated)
                     rebuilt.append(Text(String(text.string.dropFirst(found.length))))
+                    changed = true
                     index += 2
                     continue
                 }

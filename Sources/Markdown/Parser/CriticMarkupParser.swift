@@ -63,15 +63,37 @@ enum CriticMarkupParser {
     // MARK: - The rewriter
 
     private struct Rewriter: MarkupRewriter {
+        /// Untouched nodes are handed back untouched, which is the whole performance story
+        /// of this pass.
+        ///
+        /// `withUncheckedChildren` rebuilds the node AND every ancestor above it, and
+        /// rebuilding an ancestor copies that ancestor's entire child list. Rebuild every
+        /// node in a document and each of its blocks copies the document's block list once:
+        /// the cost is the document squared. A thousand one-line paragraphs took 0.8s to
+        /// parse, four times what five hundred took — and a document with no comments in it
+        /// anywhere paid exactly the same, because rebuilding did not depend on finding
+        /// anything. Now nothing is rebuilt unless a comment was actually claimed beneath it.
         mutating func defaultVisit(_ markup: Markup) -> Markup? {
-            markup.withUncheckedChildren(claimComments(in: markup.children.compactMap { visit($0) }))
+            var children: [Markup] = []
+            children.reserveCapacity(markup.childCount)
+            var changed = false
+            for child in markup.children {
+                guard let visited = visit(child) else { changed = true; continue }
+                // Identity, not equality: a child that came back as the very same raw node
+                // is one this pass had no interest in.
+                if visited.raw.markup !== child.raw.markup { changed = true }
+                children.append(visited)
+            }
+            let claimed = claimComments(in: children, changed: &changed)
+            guard changed else { return markup }
+            return markup.withUncheckedChildren(claimed)
         }
 
         /// A rewriter returns one node per visit, and splitting a run of text yields
         /// several — so the split happens where children are rebuilt, not in a
         /// `visitText`. Same shape as `AttributeBlockParser.claimImages`, for the same
         /// reason.
-        private func claimComments(in children: [Markup]) -> [Markup] {
+        private func claimComments(in children: [Markup], changed: inout Bool) -> [Markup] {
             var rebuilt: [Markup] = []
             for child in children {
                 guard let text = child as? Text else { rebuilt.append(child); continue }
@@ -87,7 +109,10 @@ enum CriticMarkupParser {
                 // rather than left as an empty `Text`, which every walker would otherwise
                 // have to know to skip.
                 if !claimed { rebuilt.append(child) }
-                else if !rest.isEmpty { rebuilt.append(Text(rest)) }
+                else {
+                    changed = true
+                    if !rest.isEmpty { rebuilt.append(Text(rest)) }
+                }
             }
             return rebuilt
         }
