@@ -248,6 +248,11 @@ public protocol MarkupVisitor<Result> {
     /// - returns: The result of the visit.
     mutating func visitInlineComment(_ inlineComment: InlineComment) -> Result
 
+    /// Visit a `TrackedChange` element and return the result.
+    /// - parameter trackedChange: A `TrackedChange` element.
+    /// - returns: The result of the visit.
+    mutating func visitTrackedChange(_ trackedChange: TrackedChange) -> Result
+
     mutating func visitFootnoteReference(_ footnoteReference: FootnoteReference) -> Result
 
     /**
@@ -436,6 +441,9 @@ extension MarkupVisitor {
     }
     public mutating func visitInlineComment(_ inlineComment: InlineComment) -> Result {
         return defaultVisit(inlineComment)
+    }
+    public mutating func visitTrackedChange(_ trackedChange: TrackedChange) -> Result {
+        return defaultVisit(trackedChange)
     }
 
     public mutating func visitFootnoteReference(_ footnoteReference: FootnoteReference) -> Result {

@@ -307,6 +307,11 @@ struct MarkupTreeDumper: MarkupWalker {
         dump(inlineComment, customDescription: "body: \(inlineComment.body)")
     }
 
+    mutating func visitTrackedChange(_ trackedChange: TrackedChange) {
+        let replaced = trackedChange.replaced.isEmpty ? "" : " replaced: \(trackedChange.replaced)"
+        dump(trackedChange, customDescription: "kind: \(trackedChange.kind.rawValue)\(replaced)")
+    }
+
     mutating func visitFootnoteReference(_ footnoteReference: FootnoteReference) {
         dump(footnoteReference, customDescription: "footnoteID: \(footnoteReference.footnoteID)")
     }
