@@ -114,5 +114,28 @@ public struct ParseOptions: OptionSet, Sendable {
     /// is left exactly as written. A comment cannot span a line break or contain inline
     /// markup — see ``InlineComment``.
     public static let parseComments = ParseOptions(rawValue: 1 << 11)
+
+    /// Enable Pandoc's bracketed span — `[text]{.class}` — as ``InlineAttributes`` elements.
+    ///
+    /// Markdown can emphasise a run of words and can make it code, and there it stops. A
+    /// document that needs to say *this phrase is a defined term* — a contract, a
+    /// specification, a report — has no way to name that, and a block-level wrapper cannot
+    /// reach three words in the middle of a sentence. The span is where a run of text says
+    /// what it IS, leaving what that looks like to the stylesheet.
+    ///
+    /// The attribute grammar is the one ``ParseOptions/parseAttributes`` uses on headings
+    /// and images, so a block is claimed only when every token in it is clearly an
+    /// attribute and `[see note]{4}` stays the prose it is.
+    ///
+    /// > Note: claimed before ``ParseOptions/parseAttributes``, and the order is
+    /// load-bearing. `# The [Contracting Party]{.defined-term}` ends in a brace block, so a
+    /// heading claiming its own attributes first would take `.defined-term` for the
+    /// heading and leave `[Contracting Party]` as literal text.
+    ///
+    /// > Note: the attributes are stored as the author wrote them, which is Pandoc's
+    /// spelling rather than the JSON5 that ``InlineAttributes`` carries when cmark's own
+    /// `^[text](attrs)` syntax produces one. Both round-trip through ``MarkupFormatter``
+    /// in the spelling they were written in.
+    public static let parseInlineSpans = ParseOptions(rawValue: 1 << 12)
 }
 

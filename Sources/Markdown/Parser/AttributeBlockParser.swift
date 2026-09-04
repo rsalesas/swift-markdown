@@ -68,16 +68,21 @@ enum AttributeBlockParser {
 
     /// The block at the very end of `text`, and what it occupies including the space
     /// before it, or nil.
-    static func trailing(_ text: String) -> (attributes: String, raw: String)? {
+    static func trailing(_ text: String, afterSiblings: Bool = false) -> (attributes: String, raw: String)? {
         guard let close = text.lastIndex(where: { !$0.isWhitespace }), text[close] == "}",
               let open = text[text.startIndex..<close].lastIndex(of: "{") else { return nil }
         let body = String(text[text.index(after: open)..<close])
         guard !body.contains("{"), !body.contains("}"), isAttributeBlock(body) else { return nil }
         // A block stands on its own: `Set{.x}` is a word with braces stuck to it. This
-        // also refuses an element that would be left with nothing but its attributes.
+        // also refuses an element that would be left with nothing but its attributes —
+        // unless something already came before this run of text. `# **Chapter** {.wide}`
+        // ends in `Text " {.wide}"`, whose own content is a single space, and the heading
+        // is plainly not "nothing but its attributes": the words are in the sibling before
+        // it. Reading that one node in isolation refused a block the author clearly wrote.
         let before = text[text.startIndex..<open]
         guard let previous = before.last, previous.isWhitespace,
-              !before.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+              afterSiblings || !before.trimmingCharacters(in: .whitespaces).isEmpty
+        else { return nil }
 
         var cut = open
         while cut > text.startIndex, text[text.index(before: cut)].isWhitespace {
@@ -133,7 +138,8 @@ enum AttributeBlockParser {
             let children = claimImages(in: visitChildren(of: heading, changed: &changed),
                                        changed: &changed)
             guard let last = children.last as? Text,
-                  let found = AttributeBlockParser.trailing(last.string) else {
+                  let found = AttributeBlockParser.trailing(last.string,
+                                                            afterSiblings: children.count > 1) else {
                 guard changed else { return heading }
                 return heading.withUncheckedChildren(children)
             }

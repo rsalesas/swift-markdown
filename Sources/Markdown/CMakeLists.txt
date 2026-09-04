@@ -62,6 +62,7 @@ add_library(Markdown
   "Interpretive Nodes/Aside.swift"
   Parser/AttributeBlockParser.swift
   Parser/CriticMarkupParser.swift
+  Parser/InlineSpanParser.swift
   Parser/BlankLineParser.swift
   Parser/BlockDirectiveParser.swift
   Parser/FencedDivParser.swift
