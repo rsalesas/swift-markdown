@@ -59,6 +59,9 @@ public extension Document {
         if options.contains(.parseAttributes) {
             self = AttributeBlockParser.claim(in: self)
         }
+        if options.contains(.parseTrackedChanges) {
+            self = TrackedChangeParser.claim(in: self)
+        }
         if options.contains(.parseComments) {
             self = CriticMarkupParser.claim(in: self)
         }
@@ -89,6 +92,9 @@ public extension Document {
         }
         if options.contains(.parseAttributes) {
             self = AttributeBlockParser.claim(in: self)
+        }
+        if options.contains(.parseTrackedChanges) {
+            self = TrackedChangeParser.claim(in: self)
         }
         if options.contains(.parseComments) {
             self = CriticMarkupParser.claim(in: self)

@@ -137,5 +137,23 @@ public struct ParseOptions: OptionSet, Sendable {
     /// `^[text](attrs)` syntax produces one. Both round-trip through ``MarkupFormatter``
     /// in the spelling they were written in.
     public static let parseInlineSpans = ParseOptions(rawValue: 1 << 12)
+
+    /// Enable CriticMarkup's tracked changes — `{++ins++}`, `{--del--}`, `{~~old~>new~~}`
+    /// and `{==highlight==}` — as ``TrackedChange`` elements.
+    ///
+    /// Reviewing a document means proposing changes to it, and Markdown has no way to say
+    /// "take this out" that is not simply taking it out. CriticMarkup is the convention for
+    /// saying it in the file itself, so a marked-up draft stays a plain text document that
+    /// any editor can open and any diff can read.
+    ///
+    /// Where ``ParseOptions/parseComments`` claims something that is *about* the document,
+    /// this claims proposals to change it — so the content is children rather than a string,
+    /// and it keeps its inline markup. Whether a change is shown, taken or dropped is the
+    /// caller's decision; the parse only records what was proposed.
+    ///
+    /// > Note: markers do not nest within their own kind, and a change cannot span a line
+    /// break — cmark never puts a newline inside a `Text` node, and a marker left open at
+    /// the end of a paragraph closes nothing.
+    public static let parseTrackedChanges = ParseOptions(rawValue: 1 << 13)
 }
 

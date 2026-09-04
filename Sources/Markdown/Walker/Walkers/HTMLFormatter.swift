@@ -367,6 +367,26 @@ public struct HTMLFormatter: MarkupWalker {
         printInline(tag: "del", strikethrough)
     }
 
+    public mutating func visitTrackedChange(_ trackedChange: TrackedChange) -> () {
+        // `<ins>` and `<del>` are HTML's own words for this, and a highlight is `<mark>`.
+        // A substitution is both at once, in the order a reader expects: what goes, then
+        // what comes. Whether to SHOW a change or resolve it is the caller's decision and
+        // not this formatter's, so everything is emitted and the markup says which is
+        // which.
+        switch trackedChange.kind {
+        case .insertion:
+            result += "<ins>"; descendInto(trackedChange); result += "</ins>"
+        case .deletion:
+            result += "<del>"; descendInto(trackedChange); result += "</del>"
+        case .substitution:
+            result += "<del>\(trackedChange.replaced)</del><ins>"
+            descendInto(trackedChange)
+            result += "</ins>"
+        case .highlight:
+            result += "<mark>"; descendInto(trackedChange); result += "</mark>"
+        }
+    }
+
     public mutating func visitInlineComment(_ inlineComment: InlineComment) -> () {
         // Nothing. A comment is editorial, and this formatter's output is a document —
         // emitting even an HTML comment would ship a reviewer's notes to whoever reads

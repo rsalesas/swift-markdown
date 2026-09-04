@@ -47,6 +47,7 @@ add_library(Markdown
   "Inline Nodes/Inline Containers/Emphasis.swift"
   "Inline Nodes/Inline Containers/Image.swift"
   "Inline Nodes/Inline Containers/InlineAttributes.swift"
+  "Inline Nodes/Inline Containers/TrackedChange.swift"
   "Inline Nodes/Inline Containers/Link.swift"
   "Inline Nodes/Inline Containers/Strikethrough.swift"
   "Inline Nodes/Inline Containers/Strong.swift"
@@ -63,6 +64,7 @@ add_library(Markdown
   Parser/AttributeBlockParser.swift
   Parser/CriticMarkupParser.swift
   Parser/InlineSpanParser.swift
+  Parser/TrackedChangeParser.swift
   Parser/BlankLineParser.swift
   Parser/BlockDirectiveParser.swift
   Parser/FencedDivParser.swift

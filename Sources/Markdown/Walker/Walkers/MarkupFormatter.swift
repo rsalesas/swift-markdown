@@ -935,6 +935,16 @@ public struct MarkupFormatter: MarkupWalker {
         descendInto(footnoteDefinition)
     }
 
+    public mutating func visitTrackedChange(_ trackedChange: TrackedChange) {
+        let fence = TrackedChangeParser.fences[trackedChange.kind]!
+        print(fence.open, for: trackedChange)
+        if trackedChange.kind == .substitution {
+            print(trackedChange.replaced + TrackedChangeParser.arrow, for: trackedChange)
+        }
+        descendInto(trackedChange)
+        print(fence.close, for: trackedChange)
+    }
+
     public mutating func visitInlineComment(_ inlineComment: InlineComment) {
         print("\(CriticMarkupParser.opener) \(inlineComment.body) \(CriticMarkupParser.closer)",
               for: inlineComment)
