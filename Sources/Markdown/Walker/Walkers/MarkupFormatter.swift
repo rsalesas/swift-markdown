@@ -1213,12 +1213,19 @@ public struct MarkupFormatter: MarkupWalker {
 
     public mutating func visitInlineAttributes(_ attributes: InlineAttributes) {
         let savedState = state
+        // Two spellings reach this node. cmark's own `^[text](attrs)` carries JSON5;
+        // Pandoc's `[text]{.class}`, claimed by `InlineSpanParser`, carries an attribute
+        // block written as the author wrote it. Formatting one as the other would hand
+        // somebody back a document they did not write — and, for a reader whose parse has
+        // only one of the two options on, one that no longer says what theirs did. So each
+        // goes back out in the spelling it came in, told apart by the grammar itself.
+        let pandoc = AttributeBlockParser.isAttributeBlock(attributes.attributes)
         func printInlineAttributes() {
-            print("^[", for: attributes)
+            print(pandoc ? "[" : "^[", for: attributes)
             descendInto(attributes)
-            print("](", for: attributes)
+            print(pandoc ? "]{" : "](", for: attributes)
             print(attributes.attributes, for: attributes)
-            print(")", for: attributes)
+            print(pandoc ? "}" : ")", for: attributes)
         }
 
         printInlineAttributes()

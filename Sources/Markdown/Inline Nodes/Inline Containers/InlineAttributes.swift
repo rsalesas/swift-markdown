@@ -9,7 +9,13 @@
 */
 
 /// A set of one or more inline attributes.
-public struct InlineAttributes: InlineMarkup, InlineContainer {
+///
+/// `RecurringInlineMarkup` because one of these can hold another: `[the [Party]{.term}
+/// named]{.note}` nests, and cmark's own `^[…](…)` nests too. Without the conformance the
+/// parser could build a tree the public initialisers could not express — and a nested span
+/// handed to `InlineAttributes(attributes:_:)` was silently dropped on the way in, which is
+/// the quiet kind of wrong this library tries hard not to be.
+public struct InlineAttributes: RecurringInlineMarkup, InlineContainer {
     public var _data: _MarkupData
 
     init(_ raw: RawMarkup) throws {

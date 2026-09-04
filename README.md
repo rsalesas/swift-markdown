@@ -45,6 +45,13 @@ options produces exactly the tree upstream produces.
 | `CodeBlock.language` | corrected docs | always was the *whole* info string, e.g. `swift title="Example"`, despite being documented as the language name |
 | `HTMLFormatter.format(_:options:parseOptions:)` | additive | the string overload could not previously be given parse options, so it could never see any of the above |
 | `MarkupFormatter` autolink condensing | bug fix | formatting `[LICENSE.txt](LICENSE.txt)` produced `<LICENSE.txt>`, which parses back as plain text — the link was silently destroyed |
+| `ParseOptions.parseFencedDivs` | new | Pandoc's `::: name` … `:::` as a `FencedDiv` container |
+| `ParseOptions.parseAttributes` | new | Pandoc's attribute block on headings and images — `# Preface {.unnumbered}`, `![alt](x.png){width=40%}` |
+| `ParseOptions.preserveBlankLines` | new | runs of blank lines between blocks as `BlankLines`, which CommonMark throws away |
+| `ParseOptions.parseComments` | new | CriticMarkup `{>> … <<}` as `InlineComment`, whose `plainText` is empty so a comment never reaches a title or a table of contents |
+| `ParseOptions.parseInlineSpans` | new | Pandoc's bracketed span — `[text]{.class}` — as `InlineAttributes` |
+| `InlineAttributes: RecurringInlineMarkup` | bug fix | one of these can hold another, and cmark parses that, but the public initialisers refused it — a nested span was silently dropped |
+| `AttributeBlockParser` trailing block | bug fix | `# **Chapter** {.wide}` was refused: the block's own text node is just a space, and the heading's words are in the sibling before it |
 
 ### Footnotes
 
@@ -78,10 +85,10 @@ before you build a renderer on them:
 ## Using it
 
 ```swift
-.package(url: "https://github.com/rsalesas/swift-markdown.git", from: "0.9.0"),
+.package(url: "https://github.com/rsalesas/swift-markdown.git", from: "0.14.0"),
 ```
 
-Tagged `0.9.0` — ahead of upstream's 0.8.0, and numbered so it cannot be mistaken
+Tagged `0.14.0` — ahead of upstream's 0.8.0, and numbered so it cannot be mistaken
 for an upstream patch release. Unlike upstream's `main`, this fork pins swift-cmark
 to a version rather than tracking its `gfm` branch, because SwiftPM refuses to
 resolve a versioned dependency whose own manifest depends on a branch. Upstream does

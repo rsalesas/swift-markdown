@@ -50,6 +50,12 @@ public extension Document {
         } else {
             self = MarkupParser.parseString(string, source: source, options: options)
         }
+        // Before attributes, and the order is load-bearing: `# The [Party]{.defined-term}`
+        // ends in a brace block, so a heading claiming its own attributes first would take
+        // `.defined-term` for the heading and leave `[Party]` as literal text.
+        if options.contains(.parseInlineSpans) {
+            self = InlineSpanParser.claim(in: self)
+        }
         if options.contains(.parseAttributes) {
             self = AttributeBlockParser.claim(in: self)
         }
@@ -74,6 +80,12 @@ public extension Document {
             self = FencedDivParser.parse(string, source: file, options: options)
         } else {
             self = MarkupParser.parseString(string, source: file, options: options)
+        }
+        // Before attributes, and the order is load-bearing: `# The [Party]{.defined-term}`
+        // ends in a brace block, so a heading claiming its own attributes first would take
+        // `.defined-term` for the heading and leave `[Party]` as literal text.
+        if options.contains(.parseInlineSpans) {
+            self = InlineSpanParser.claim(in: self)
         }
         if options.contains(.parseAttributes) {
             self = AttributeBlockParser.claim(in: self)
