@@ -51,6 +51,8 @@ enum RawMarkupData: Equatable {
     case footnoteReference(footnoteID: String)
     case inlineComment(body: String)
     case trackedChange(kind: String, replaced: String)
+    case inlineMath(tex: String)
+    case displayMath(tex: String)
 
     // `alignments` indicate the fixed column count of every row in the table.
     case table(columnAlignments: [Table.ColumnAlignment?])
@@ -373,6 +375,14 @@ final class RawMarkup: ManagedBuffer<RawMarkupHeader, RawMarkup> {
 
     static func inlineComment(body: String, parsedRange: SourceRange?) -> RawMarkup {
         return .create(data: .inlineComment(body: body), parsedRange: parsedRange, children: [])
+    }
+
+    static func inlineMath(tex: String, parsedRange: SourceRange?) -> RawMarkup {
+        return .create(data: .inlineMath(tex: tex), parsedRange: parsedRange, children: [])
+    }
+
+    static func displayMath(tex: String, parsedRange: SourceRange?) -> RawMarkup {
+        return .create(data: .displayMath(tex: tex), parsedRange: parsedRange, children: [])
     }
 
     static func trackedChange(kind: String, replaced: String, parsedRange: SourceRange?,

@@ -155,5 +155,21 @@ public struct ParseOptions: OptionSet, Sendable {
     /// break — cmark never puts a newline inside a `Text` node, and a marker left open at
     /// the end of a paragraph closes nothing.
     public static let parseTrackedChanges = ParseOptions(rawValue: 1 << 13)
+
+    /// Enable mathematics — `$$ … $$` — as ``InlineMath`` and ``DisplayMath`` elements.
+    ///
+    /// One delimiter, and where it sits is what makes it display: a formula alone in a
+    /// paragraph is a ``DisplayMath``, the same formula inside a sentence is an
+    /// ``InlineMath``. `$ … $` is deliberately NOT a second, inline fence — a single dollar
+    /// sign is a currency symbol in the documents this is for, and `$1,200 and $50/hour`
+    /// must never open a formula.
+    ///
+    /// > Note: the TeX is read from the FILE, not from the parsed tree, and a claim with no
+    /// source takes nothing. TeX is written in the characters Markdown reserves — `\\` ends
+    /// a matrix row, `\,` is a thin space, `*` multiplies — and cmark has resolved every
+    /// escape and paired every emphasis long before a rewriter sees the paragraph. The
+    /// fences are found in the tree, which is what keeps code samples safe; the content
+    /// between them comes from the source.
+    public static let parseMath = ParseOptions(rawValue: 1 << 14)
 }
 
