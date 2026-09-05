@@ -202,17 +202,24 @@ final class CriticMarkupTests: XCTestCase {
 
     // MARK: - Source ranges
     //
-    // Whether a claimed comment carries a usable source range decides how the app deletes
-    // one. Recorded here either way so the answer is a fact rather than an assumption.
+    // A claimed comment carries a real one, which is what lets an application find the
+    // characters again — and the words cannot, since two comments may say the same thing.
+    // It used to carry none: the rewriter synthesises the node, and a synthesised node has
+    // no position. What changed is where the position is read from. The run of text holding
+    // a comment already knows which characters of the file it came from, so the comment
+    // inside it is found by reading THOSE characters, rather than by counting through a
+    // parsed string that smart punctuation has already changed the length of.
 
-    func testWhetherAClaimedCommentHasASourceRange() {
-        let document = parse("Before {>> RS: check <<} after.")
+    func testAClaimedCommentCarriesItsSourceRange() {
+        let source = "Before {>> RS: check <<} after."
+        let document = parse(source)
         let comment = document.child(at: 0)!.children.compactMap { $0 as? InlineComment }.first
-        XCTAssertNotNil(comment)
-        // Synthesised by the rewriter, so no range is expected. If this ever starts
-        // failing, the app can stop scanning within the block and use the range directly.
-        XCTAssertNil(comment?.range,
-                     "a range appeared: \(String(describing: comment?.range))")
+        let range = try? XCTUnwrap(comment?.range)
+        XCTAssertEqual(SourceLocation(line: 1, column: 8, source: nil), range?.lowerBound)
+        XCTAssertEqual(SourceLocation(line: 1, column: 25, source: nil), range?.upperBound)
+        // The claim in full: those characters, cut out of the file, are the comment.
+        XCTAssertEqual("{>> RS: check <<}",
+                       range.flatMap { SourceByteIndex(source).text(in: $0) }.map(String.init))
     }
 }
 

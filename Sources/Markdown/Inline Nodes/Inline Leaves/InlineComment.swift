@@ -47,9 +47,13 @@ public struct InlineComment: InlineMarkup {
 // MARK: - Public API
 
 public extension InlineComment {
-    /// Create a comment with the given body.
-    init(_ body: String) {
-        try! self.init(.inlineComment(body: body, parsedRange: nil))
+    /// Create a comment with the given body, and optionally where in the file it came from.
+    ///
+    /// A comment claimed from a parse carries its source range, which is what lets an editor
+    /// find the characters again — the words alone cannot, since two comments may say the
+    /// same thing. One built by hand has none, because there is no file for it to be in.
+    init(_ body: String, range: SourceRange? = nil) {
+        try! self.init(.inlineComment(body: body, parsedRange: range))
     }
 
     /// What the comment says, without its fences and with the surrounding space trimmed:

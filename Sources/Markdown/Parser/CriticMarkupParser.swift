@@ -33,8 +33,15 @@ enum CriticMarkupParser {
     static let closer = "<<}"
 
     /// Take the comments in `document` out of the text and into ``InlineComment`` elements.
-    static func claim(in document: Document) -> Document {
-        var rewriter = Rewriter()
+    /// Take the comments in `document` out of the text and into ``InlineComment`` elements.
+    ///
+    /// `source` is the file the document was parsed from, and giving it here is what lets a
+    /// claimed comment keep a real ``Markup/range``. The text run holding a comment already
+    /// knows which characters of the file it came from; the comment inside it is found by
+    /// reading THOSE characters rather than by counting through the parsed string, which
+    /// smart punctuation has already changed the length of.
+    static func claim(in document: Document, source: String? = nil) -> Document {
+        var rewriter = Rewriter(index: source.map(SourceByteIndex.init))
         return rewriter.visit(document) as? Document ?? document
     }
 
@@ -63,6 +70,11 @@ enum CriticMarkupParser {
     // MARK: - The rewriter
 
     private struct Rewriter: MarkupRewriter {
+        /// The file, for reading a comment's own characters back out of it. Nil when the
+        /// caller did not offer one, and then a claimed comment carries no range — which is
+        /// how this behaved before ranges existed at all.
+        let index: SourceByteIndex?
+
         /// Untouched nodes are handed back untouched, which is the whole performance story
         /// of this pass.
         ///
@@ -97,12 +109,17 @@ enum CriticMarkupParser {
             var rebuilt: [Markup] = []
             for child in children {
                 guard let text = child as? Text else { rebuilt.append(child); continue }
+                // Where this run came from, and how far into it the search has got. The
+                // markers are `{`, `>`, `<` and `}`, none of which smart punctuation
+                // touches, so the nth comment in the parsed string is the nth in the source
+                // — which is what makes reading the two in step exact rather than a guess.
+                var window = text.range.flatMap { index?.text(in: $0) }
                 var rest = text.string
                 var claimed = false
                 while let piece = CriticMarkupParser.split(rest) {
                     claimed = true
                     if !piece.before.isEmpty { rebuilt.append(Text(piece.before)) }
-                    rebuilt.append(InlineComment(piece.body))
+                    rebuilt.append(InlineComment(piece.body, range: sourceSpan(in: &window)))
                     rest = piece.after
                 }
                 // Text before, between and after all survive. An empty tail is dropped
@@ -115,6 +132,22 @@ enum CriticMarkupParser {
                 }
             }
             return rebuilt
+        }
+
+        /// The next comment's span in the source window, advancing the window past it.
+        ///
+        /// Nil when there is no window — no source was offered — or when the file does not
+        /// hold what the parse says it does, which would mean this code has misunderstood
+        /// something and had better say so by declining rather than by pointing somewhere.
+        private func sourceSpan(in window: inout Substring?) -> SourceRange? {
+            guard let index, var remaining = window,
+                  let open = remaining.range(of: CriticMarkupParser.opener),
+                  let close = remaining.range(of: CriticMarkupParser.closer,
+                                              range: open.upperBound..<remaining.endIndex)
+            else { window = nil; return nil }
+            remaining = remaining[close.upperBound...]
+            window = remaining
+            return index.range(of: open.lowerBound..<close.upperBound)
         }
     }
 }
