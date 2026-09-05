@@ -59,6 +59,18 @@ public extension Document {
         if options.contains(.parseAttributes) {
             self = AttributeBlockParser.claim(in: self)
         }
+        // Before tracked changes and comments, so a formula's runs of text are still the
+        // ones cmark produced and still say which characters of the file they came from —
+        // which is the only place the TeX can be read.
+        if options.contains(.parseMath) {
+            self = MathParser.claim(in: self, source: string)
+        }
+        // Before tracked changes and comments, so a formula's runs of text are still the
+        // ones cmark produced and still say which characters of the file they came from —
+        // which is the only place the TeX can be read.
+        if options.contains(.parseMath) {
+            self = MathParser.claim(in: self, source: string)
+        }
         if options.contains(.parseTrackedChanges) {
             self = TrackedChangeParser.claim(in: self, source: string)
         }

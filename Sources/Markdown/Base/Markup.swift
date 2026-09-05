@@ -65,6 +65,10 @@ func makeMarkup(_ data: _MarkupData) -> Markup {
         return FootnoteDefinition(data)
     case .inlineComment:
         return InlineComment(data)
+    case .inlineMath:
+        return InlineMath(data)
+    case .displayMath:
+        return DisplayMath(data)
     case .trackedChange:
         return TrackedChange(data)
     case .footnoteReference:

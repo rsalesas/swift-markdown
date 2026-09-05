@@ -387,6 +387,17 @@ public struct HTMLFormatter: MarkupWalker {
         }
     }
 
+    public mutating func visitInlineMath(_ inlineMath: InlineMath) -> () {
+        // No renderer here: a formula needs a typesetter, and this library does not have
+        // one. The TeX is emitted in a span an application can hand to KaTeX or MathJax,
+        // marked so it can be found without guessing.
+        result += "<span class=\"math math-inline\">\(inlineMath.tex.htmlEscaped())</span>"
+    }
+
+    public mutating func visitDisplayMath(_ displayMath: DisplayMath) -> () {
+        result += "<div class=\"math math-display\">\(displayMath.tex.htmlEscaped())</div>"
+    }
+
     public mutating func visitInlineComment(_ inlineComment: InlineComment) -> () {
         // Nothing. A comment is editorial, and this formatter's output is a document —
         // emitting even an HTML comment would ship a reviewer's notes to whoever reads

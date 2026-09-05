@@ -26,6 +26,7 @@ add_library(Markdown
   "Block Nodes/Block Container Blocks/BlockQuote.swift"
   "Block Nodes/Block Container Blocks/CustomBlock.swift"
   "Block Nodes/Leaf Blocks/BlankLines.swift"
+  "Block Nodes/Leaf Blocks/DisplayMath.swift"
   "Block Nodes/Block Container Blocks/FencedDiv.swift"
   "Block Nodes/Block Container Blocks/FootnoteDefinition.swift"
   "Block Nodes/Block Container Blocks/ListItem.swift"
@@ -54,6 +55,7 @@ add_library(Markdown
   "Inline Nodes/Inline Leaves/CustomInline.swift"
   "Inline Nodes/Inline Leaves/FootnoteReference.swift"
   "Inline Nodes/Inline Leaves/InlineComment.swift"
+  "Inline Nodes/Inline Leaves/InlineMath.swift"
   "Inline Nodes/Inline Leaves/InlineCode.swift"
   "Inline Nodes/Inline Leaves/InlineHTML.swift"
   "Inline Nodes/Inline Leaves/LineBreak.swift"
@@ -63,6 +65,7 @@ add_library(Markdown
   "Interpretive Nodes/Aside.swift"
   Parser/AttributeBlockParser.swift
   Parser/CriticMarkupParser.swift
+  Parser/MathParser.swift
   Parser/InlineSpanParser.swift
   Parser/TrackedChangeParser.swift
   Parser/BlankLineParser.swift

@@ -52,6 +52,7 @@ options produces exactly the tree upstream produces.
 | `ParseOptions.parseInlineSpans` | new | Pandoc's bracketed span — `[text]{.class}` — as `InlineAttributes` |
 | `TrackedChange` source ranges | new | a claimed change carries the range of its own characters, across a span that crosses sibling nodes and a deletion whose `--` smart punctuation has already turned into an en dash |
 | `InlineComment` source ranges | bug fix | a claimed comment carries the range of its own characters, so an application can find them again — two comments may say the same thing, and only a position tells them apart |
+| `ParseOptions.parseMath` | new | mathematics as `$$ … $$` — `InlineMath` in a sentence, `DisplayMath` alone in a paragraph. The TeX is read from the FILE: cmark resolves `\\` and `\,` and pairs `*x*` long before a rewriter sees the paragraph, so the parsed tree cannot carry a formula whatever the delimiters. A single `$` is never a fence — it is a currency symbol |
 | `ParseOptions.parseTrackedChanges` | new | CriticMarkup's tracked changes — `{++ins++}`, `{--del--}`, `{~~old~>new~~}`, `{==highlight==}` — as `TrackedChange` |
 | Text ranges around a tracked change | bug fix | claiming a change splits the run of text it was in, and the pieces either side kept no range — so a comment sharing a paragraph with a change could be found and not placed |
 | `InlineAttributes: RecurringInlineMarkup` | bug fix | one of these can hold another, and cmark parses that, but the public initialisers refused it — a nested span was silently dropped |

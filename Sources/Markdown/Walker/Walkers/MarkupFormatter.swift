@@ -945,6 +945,14 @@ public struct MarkupFormatter: MarkupWalker {
         print(fence.close, for: trackedChange)
     }
 
+    public mutating func visitInlineMath(_ inlineMath: InlineMath) {
+        print("\(MathParser.fence)\(inlineMath.tex)\(MathParser.fence)", for: inlineMath)
+    }
+
+    public mutating func visitDisplayMath(_ displayMath: DisplayMath) {
+        print("\(MathParser.fence)\n\(displayMath.tex)\n\(MathParser.fence)", for: displayMath)
+    }
+
     public mutating func visitInlineComment(_ inlineComment: InlineComment) {
         print("\(CriticMarkupParser.opener) \(inlineComment.body) \(CriticMarkupParser.closer)",
               for: inlineComment)

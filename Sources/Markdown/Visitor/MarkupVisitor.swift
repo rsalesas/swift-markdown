@@ -248,6 +248,16 @@ public protocol MarkupVisitor<Result> {
     /// - returns: The result of the visit.
     mutating func visitInlineComment(_ inlineComment: InlineComment) -> Result
 
+    /// Visit an `InlineMath` element and return the result.
+    /// - parameter inlineMath: An `InlineMath` element.
+    /// - returns: The result of the visit.
+    mutating func visitInlineMath(_ inlineMath: InlineMath) -> Result
+
+    /// Visit a `DisplayMath` element and return the result.
+    /// - parameter displayMath: A `DisplayMath` element.
+    /// - returns: The result of the visit.
+    mutating func visitDisplayMath(_ displayMath: DisplayMath) -> Result
+
     /// Visit a `TrackedChange` element and return the result.
     /// - parameter trackedChange: A `TrackedChange` element.
     /// - returns: The result of the visit.
@@ -441,6 +451,14 @@ extension MarkupVisitor {
     }
     public mutating func visitInlineComment(_ inlineComment: InlineComment) -> Result {
         return defaultVisit(inlineComment)
+    }
+
+    public mutating func visitInlineMath(_ inlineMath: InlineMath) -> Result {
+        return defaultVisit(inlineMath)
+    }
+
+    public mutating func visitDisplayMath(_ displayMath: DisplayMath) -> Result {
+        return defaultVisit(displayMath)
     }
     public mutating func visitTrackedChange(_ trackedChange: TrackedChange) -> Result {
         return defaultVisit(trackedChange)
