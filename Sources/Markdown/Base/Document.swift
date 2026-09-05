@@ -63,7 +63,7 @@ public extension Document {
             self = TrackedChangeParser.claim(in: self)
         }
         if options.contains(.parseComments) {
-            self = CriticMarkupParser.claim(in: self)
+            self = CriticMarkupParser.claim(in: self, source: string)
         }
         if options.contains(.preserveBlankLines) {
             self = BlankLineParser.record(in: self, source: string)
@@ -97,7 +97,7 @@ public extension Document {
             self = TrackedChangeParser.claim(in: self)
         }
         if options.contains(.parseComments) {
-            self = CriticMarkupParser.claim(in: self)
+            self = CriticMarkupParser.claim(in: self, source: string)
         }
         if options.contains(.preserveBlankLines) {
             self = BlankLineParser.record(in: self, source: string)
