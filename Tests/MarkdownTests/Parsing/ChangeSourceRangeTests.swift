@@ -99,6 +99,60 @@ final class ChangeSourceRangeTests: XCTestCase {
         XCTAssertNil(TrackedChange(kind: .insertion, Text("x")).range)
     }
 
+    // MARK: - What is left beside a change
+
+    /// Claiming a change splits the run of text it was in, and the pieces left either side
+    /// keep saying which characters of the file they came from.
+    ///
+    /// Not a nicety: this parser runs before `CriticMarkupParser`, and that one finds a
+    /// comment by reading the source a run of text came from. Runs handed on without a range
+    /// left it nothing to read, so a comment sharing a paragraph with a change was found and
+    /// could not be placed — see `CommentSourceRangeTests`. The parsed string and the source
+    /// span are different lengths wherever smart punctuation has been, which is why each case
+    /// below reads the file rather than the parse.
+    func testTheTextEitherSideOfAChangeKnowsWhereItCameFrom() {
+        let cases: [(String, [String])] = [
+            ("The term is {--12--} months.", ["The term is ", " months."]),
+            ("The term is {--12--}{++18++} months.", ["The term is ", " months."]),
+            // Smart punctuation: the parsed run says `Don’t – really`, the file does not.
+            ("Don't -- really {--gone--} after.", ["Don't -- really ", " after."]),
+            // Columns are UTF-8 bytes.
+            ("Ünïcödé ahead {--gone--} and after.", ["Ünïcödé ahead ", " and after."]),
+            ("Emoji 🎯 ahead {--gone--} and after.", ["Emoji 🎯 ahead ", " and after."]),
+        ]
+        for (source, expected) in cases {
+            let document = Document(parsing: source, options: .parseTrackedChanges)
+            var walker = Runs()
+            walker.visit(document)
+            let index = SourceByteIndex(source)
+            XCTAssertEqual(expected,
+                           walker.found.compactMap { $0.range }
+                               .compactMap { index.text(in: $0).map(String.init) },
+                           source)
+        }
+    }
+
+    /// A change's own content is cut from the run the fences were in, and a change claimed
+    /// inside another is cut from pieces this rewriter already built. None of it belongs to
+    /// the file as a span this parser can name, so all of it reports no range rather than a
+    /// misleading one — the same answer the nested change itself gives.
+    func testTextInsideAChangeHasNoRange() {
+        let document = Document(parsing: "A {==keep {++added++} it==} here.",
+                                options: .parseTrackedChanges)
+        var walker = Runs()
+        walker.visit(document)
+        XCTAssertEqual(["keep ", "added", " it"],
+                       walker.found.filter { $0.range == nil }.map(\.string))
+        // What is outside it still does.
+        XCTAssertEqual(["A ", " here."], walker.found.filter { $0.range != nil }.map(\.string))
+    }
+
+    /// Every run of text, changes included — so the ones a change was cut out of are seen.
+    struct Runs: MarkupWalker {
+        var found: [Text] = []
+        mutating func visitText(_ text: Text) { found.append(text) }
+    }
+
     struct Changes: MarkupWalker {
         var found: [TrackedChange] = []
         mutating func visitTrackedChange(_ change: TrackedChange) {
