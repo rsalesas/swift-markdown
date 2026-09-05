@@ -60,7 +60,7 @@ public extension Document {
             self = AttributeBlockParser.claim(in: self)
         }
         if options.contains(.parseTrackedChanges) {
-            self = TrackedChangeParser.claim(in: self)
+            self = TrackedChangeParser.claim(in: self, source: string)
         }
         if options.contains(.parseComments) {
             self = CriticMarkupParser.claim(in: self, source: string)
@@ -94,7 +94,7 @@ public extension Document {
             self = AttributeBlockParser.claim(in: self)
         }
         if options.contains(.parseTrackedChanges) {
-            self = TrackedChangeParser.claim(in: self)
+            self = TrackedChangeParser.claim(in: self, source: string)
         }
         if options.contains(.parseComments) {
             self = CriticMarkupParser.claim(in: self, source: string)

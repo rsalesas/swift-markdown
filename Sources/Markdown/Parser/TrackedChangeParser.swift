@@ -65,8 +65,14 @@ enum TrackedChangeParser {
     ]
 
     /// Take the tracked changes in `document` into ``TrackedChange`` elements.
-    static func claim(in document: Document) -> Document {
-        var rewriter = Rewriter()
+    ///
+    /// `source` is the file the document was parsed from, and giving it here is what lets a
+    /// claimed change keep a real ``Markup/range``. The runs of text a change sits between
+    /// already know which characters of the file they came from; the fences are found by
+    /// reading THOSE characters rather than by counting through the parsed string, whose
+    /// length smart punctuation has already changed.
+    static func claim(in document: Document, source: String? = nil) -> Document {
+        var rewriter = Rewriter(index: source.map(SourceByteIndex.init))
         return rewriter.visit(document) as? Document ?? document
     }
 
@@ -149,6 +155,10 @@ enum TrackedChangeParser {
     // MARK: - The rewriter
 
     private struct Rewriter: MarkupRewriter {
+        /// The file, for reading a change's own characters back out of it. Nil when the
+        /// caller offered none, and then a claimed change carries no range.
+        let index: SourceByteIndex?
+
         /// Untouched nodes are handed back untouched — see `CriticMarkupParser.Rewriter`
         /// for what rebuilding one costs and why identity is the test.
         mutating func defaultVisit(_ markup: Markup) -> Markup? {
@@ -160,14 +170,22 @@ enum TrackedChangeParser {
                 if visited.raw.markup !== child.raw.markup { changed = true }
                 children.append(visited)
             }
-            let claimed = claimChanges(in: children, changed: &changed)
+            // Each run's own window on the file, so a change claimed between two of them can
+            // say where it is. Only the original runs have one; anything this rewriter built
+            // belongs to no file and carries nil.
+            let windows = children.map { child -> Substring? in
+                guard let text = child as? Text, let range = text.range else { return nil }
+                return index?.text(in: range)
+            }
+            let claimed = claimChanges(in: children, windows: windows, changed: &changed)
             guard changed else { return markup }
             return markup.withUncheckedChildren(claimed)
         }
 
         /// Recursive on the tail, which is what finds the second and third change in a
         /// sentence, and on the content, so a highlight around an insertion works.
-        private func claimChanges(in children: [Markup], changed: inout Bool) -> [Markup] {
+        private func claimChanges(in children: [Markup], windows: [Substring?],
+                                  changed: inout Bool) -> [Markup] {
             guard let span = TrackedChangeParser.firstMarked(in: children),
                   let opening = children[span.open] as? Text,
                   let closing = children[span.close] as? Text else { return children }
@@ -204,18 +222,99 @@ enum TrackedChangeParser {
                 if !rest.isEmpty { content.insert(Text(rest), at: 0) }
             }
 
+            // A change inside a change is claimed from pieces this rewriter built, which
+            // belong to no file — so it carries no range. They are the rarest thing here, and
+            // an application that needs a position is better told there is not one.
             var nested = false
-            content = claimChanges(in: content, changed: &nested)
+            content = claimChanges(in: content, windows: Array(repeating: nil, count: content.count),
+                                   changed: &nested)
+            let located = sourceSpan(of: span, opening: opening, closing: closing,
+                                     openWindow: windows[span.open],
+                                     closeWindow: windows[span.close])
             rebuilt.append(TrackedChange(kind: span.kind, replaced: replaced,
+                                         range: located.range,
                                          content.compactMap { $0 as? RecurringInlineMarkup }))
 
+            // What follows the change, with the rest of the file it came from — which is how
+            // a second change on the same line still knows where it is.
             var rest: [Markup] = []
+            var restWindows: [Substring?] = []
             let after = String(closing.string[span.closeAt.upperBound...])
-            if !after.isEmpty { rest.append(Text(after)) }
+            if !after.isEmpty {
+                rest.append(Text(after))
+                restWindows.append(located.remaining)
+            }
             rest.append(contentsOf: children[(span.close + 1)...])
+            restWindows.append(contentsOf: windows[(span.close + 1)...])
             var more = false
-            rebuilt.append(contentsOf: claimChanges(in: rest, changed: &more))
+            rebuilt.append(contentsOf: claimChanges(in: rest, windows: restWindows, changed: &more))
             return rebuilt
+        }
+
+        /// Where in the file this change's markers are.
+        ///
+        /// The fences are ASCII that smart punctuation never touches, so the nth occurrence
+        /// of one in a parsed run is the nth in the source that run came from. Counting the
+        /// occurrences is therefore exact, and is what keeps this honest across a run whose
+        /// parsed text is a different length from its source — which is most of them.
+        ///
+        /// Nil for a change claimed inside another: the pieces it sits between were built by
+        /// this rewriter and belong to no file. Nested changes are the rarest thing here and
+        /// an application that needs a position is better told there isn't one.
+        private func sourceSpan(of span: Marked, opening: Text, closing: Text,
+                                openWindow: Substring?, closeWindow: Substring?)
+            -> (range: SourceRange?, remaining: Substring?) {
+            guard let index, let openWindow, let closeWindow,
+                  let fence = TrackedChangeParser.spellings[span.kind]
+            else { return (nil, nil) }
+            // Which spelling of this kind's opener actually matched, since a deletion has two.
+            let opened = String(opening.string[span.openAt.lowerBound..<span.openAt.upperBound])
+            let closed = String(closing.string[span.closeAt.lowerBound..<span.closeAt.upperBound])
+            guard fence.contains(where: { $0.open == opened && $0.close == closed })
+            else { return (nil, nil) }
+            guard let start = nth(occurrencesOf: opened, before: span.openAt.lowerBound,
+                                  in: opening.string, within: openWindow,
+                                  spelled: fence.map(\.open), takingEnd: false),
+                  let end = nth(occurrencesOf: closed, before: span.closeAt.lowerBound,
+                                in: closing.string, within: closeWindow,
+                                spelled: fence.map(\.close), takingEnd: true),
+                  start < end else { return (nil, nil) }
+            return (index.range(of: start..<end), closeWindow[end...])
+        }
+
+        /// The same occurrence of a fence in `window` as the one at `position` in `parsed`.
+        ///
+        /// `spelled` is every way this kind's fence can be written, and it exists for the
+        /// deletion. Smart punctuation turns each `--` into an en dash, so the run reaching
+        /// this rewriter says `{–gone–}` while the file says `{--gone--}`: searching the file
+        /// for the spelling the PARSE used would find nothing at all. Counting openers of
+        /// the kind, whichever way each is written, keeps the two in step — and it has to
+        /// count them together, since a file may hold both spellings and the parse will have
+        /// flattened them to one.
+        private func nth(occurrencesOf needle: String, before position: String.Index,
+                         in parsed: String, within window: Substring,
+                         spelled: [String], takingEnd: Bool) -> String.Index? {
+            var count = 0
+            var cursor = parsed.startIndex
+            while let found = parsed.range(of: needle, range: cursor..<parsed.endIndex),
+                  found.lowerBound < position {
+                count += 1
+                cursor = found.upperBound
+            }
+            var remaining = window
+            var found: Range<Substring.Index>?
+            for _ in 0...count {
+                guard let next = earliest(of: spelled, in: remaining) else { return nil }
+                found = next
+                remaining = remaining[next.upperBound...]
+            }
+            return found.map { takingEnd ? $0.upperBound : $0.lowerBound }
+        }
+
+        /// The first place any of these spellings appears.
+        private func earliest(of spellings: [String],
+                              in text: Substring) -> Range<Substring.Index>? {
+            spellings.compactMap { text.range(of: $0) }.min { $0.lowerBound < $1.lowerBound }
         }
     }
 }

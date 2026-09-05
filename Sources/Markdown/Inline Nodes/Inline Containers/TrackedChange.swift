@@ -64,16 +64,23 @@ public struct TrackedChange: RecurringInlineMarkup, InlineContainer {
 // MARK: - Public API
 
 public extension TrackedChange {
-    /// Create a tracked change of `kind` over zero or more child inline elements.
-    init<Children: Sequence>(kind: Kind, replaced: String = "", _ children: Children)
+    /// Create a tracked change of `kind` over zero or more child inline elements, and
+    /// optionally where in the file it came from.
+    ///
+    /// A change claimed from a parse carries its source range, which is what lets an editor
+    /// find the characters again — the words alone cannot, since two changes may propose
+    /// exactly the same thing. One built by hand has none, because there is no file for it
+    /// to be in.
+    init<Children: Sequence>(kind: Kind, replaced: String = "", range: SourceRange? = nil,
+                             _ children: Children)
     where Children.Element == RecurringInlineMarkup {
         try! self.init(.trackedChange(kind: kind.rawValue, replaced: replaced,
-                                      parsedRange: nil, children.map { $0.raw.markup }))
+                                      parsedRange: range, children.map { $0.raw.markup }))
     }
 
     /// Create a tracked change of `kind` over zero or more child inline elements.
     init(kind: Kind, replaced: String = "", _ children: RecurringInlineMarkup...) {
-        self.init(kind: kind, replaced: replaced, children)
+        self.init(kind: kind, replaced: replaced, range: nil, children)
     }
 
     /// What is being proposed here.
