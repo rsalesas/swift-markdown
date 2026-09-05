@@ -191,9 +191,15 @@ enum TrackedChangeParser {
                   let closing = children[span.close] as? Text else { return children }
             changed = true
 
+            // Read before anything is rebuilt, because what it says about the file is what
+            // the rebuilt pieces need in order to keep saying where they came from.
+            let located = sourceSpan(of: span, opening: opening, closing: closing,
+                                     openWindow: windows[span.open],
+                                     closeWindow: windows[span.close])
+
             var rebuilt = Array(children[children.startIndex..<span.open])
             let head = String(opening.string[opening.string.startIndex..<span.openAt.lowerBound])
-            if !head.isEmpty { rebuilt.append(Text(head)) }
+            if !head.isEmpty { rebuilt.append(text(head, from: located.head)) }
 
             var content: [Markup] = []
             if span.open == span.close {
@@ -228,9 +234,6 @@ enum TrackedChangeParser {
             var nested = false
             content = claimChanges(in: content, windows: Array(repeating: nil, count: content.count),
                                    changed: &nested)
-            let located = sourceSpan(of: span, opening: opening, closing: closing,
-                                     openWindow: windows[span.open],
-                                     closeWindow: windows[span.close])
             rebuilt.append(TrackedChange(kind: span.kind, replaced: replaced,
                                          range: located.range,
                                          content.compactMap { $0 as? RecurringInlineMarkup }))
@@ -241,7 +244,7 @@ enum TrackedChangeParser {
             var restWindows: [Substring?] = []
             let after = String(closing.string[span.closeAt.upperBound...])
             if !after.isEmpty {
-                rest.append(Text(after))
+                rest.append(text(after, from: located.remaining))
                 restWindows.append(located.remaining)
             }
             rest.append(contentsOf: children[(span.close + 1)...])
@@ -263,23 +266,45 @@ enum TrackedChangeParser {
         /// an application that needs a position is better told there isn't one.
         private func sourceSpan(of span: Marked, opening: Text, closing: Text,
                                 openWindow: Substring?, closeWindow: Substring?)
-            -> (range: SourceRange?, remaining: Substring?) {
+            -> (head: Substring?, range: SourceRange?, remaining: Substring?) {
             guard let index, let openWindow, let closeWindow,
                   let fence = TrackedChangeParser.spellings[span.kind]
-            else { return (nil, nil) }
+            else { return (nil, nil, nil) }
             // Which spelling of this kind's opener actually matched, since a deletion has two.
             let opened = String(opening.string[span.openAt.lowerBound..<span.openAt.upperBound])
             let closed = String(closing.string[span.closeAt.lowerBound..<span.closeAt.upperBound])
             guard fence.contains(where: { $0.open == opened && $0.close == closed })
-            else { return (nil, nil) }
+            else { return (nil, nil, nil) }
             guard let start = nth(occurrencesOf: opened, before: span.openAt.lowerBound,
                                   in: opening.string, within: openWindow,
                                   spelled: fence.map(\.open), takingEnd: false),
                   let end = nth(occurrencesOf: closed, before: span.closeAt.lowerBound,
                                 in: closing.string, within: closeWindow,
                                 spelled: fence.map(\.close), takingEnd: true),
-                  start < end else { return (nil, nil) }
-            return (index.range(of: start..<end), closeWindow[end...])
+                  start < end else { return (nil, nil, nil) }
+            return (openWindow[..<start], index.range(of: start..<end), closeWindow[end...])
+        }
+
+        /// A run of text this rewriter built, keeping the piece of the file it came from.
+        ///
+        /// Splitting a run around a change makes two new ``Text`` nodes, and a plain
+        /// `Text(string)` has no range — so everything downstream that works by reading a
+        /// run's own characters back out of the file goes blind on the paragraph, which is
+        /// every paragraph that has a change in it. `CriticMarkupParser` runs after this one
+        /// and does exactly that, and a comment sharing a paragraph with a change was
+        /// therefore unplaceable: found, but with nowhere to say it was.
+        ///
+        /// The range is the SOURCE span, and the string is the PARSED text, which are not the
+        /// same length — smart punctuation has already been over it. That is not a
+        /// discrepancy this introduces: it is what every `Text` cmark produces already says,
+        /// and the reason a position is only ever recovered by reading the file rather than
+        /// by counting through the parse.
+        private func text(_ string: String, from window: Substring?) -> Text {
+            guard let index, let window,
+                  let range = index.range(of: window.startIndex..<window.endIndex),
+                  let located = try? Text(.text(parsedRange: range, string: string))
+            else { return Text(string) }
+            return located
         }
 
         /// The same occurrence of a fence in `window` as the one at `position` in `parsed`.

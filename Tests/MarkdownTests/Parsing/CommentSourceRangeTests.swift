@@ -99,6 +99,61 @@ final class CommentSourceRangeTests: XCTestCase {
         XCTAssertNil(InlineComment("RS: note").range)
     }
 
+    /// A comment sharing its paragraph with a tracked change.
+    ///
+    /// `TrackedChangeParser` runs first and splits the paragraph's runs of text around each
+    /// change it claims. The pieces it hands back are what this pass then reads a comment out
+    /// of — so if they carry no source range, every comment in a paragraph that has a change
+    /// in it is found and cannot be placed. Which was true of all four kinds, and of a
+    /// comment on either side of the change.
+    func testACommentBesideATrackedChangeKeepsItsRange() {
+        let cases = [
+            "The term is {++18++} months. {>> RS: note <<}",
+            "The term is {--12--} months. {>> RS: note <<}",
+            "The term is {~~12~>18~~} months. {>> RS: note <<}",
+            "The term is {==12 months==}. {>> RS: note <<}",
+            // Before the change as well as after it.
+            "{>> RS: note <<} The term is {--12--} months.",
+            // Two changes: the comment is past both, so the window has to survive being
+            // handed on twice.
+            "The term is {--12--}{++18++} months. {>> RS: note <<}",
+            // The two corrections that make this hard, with a change in front of them.
+            "Don't {--12--} -- really -- {>> RS: note <<} after",
+            "Ünïcödé {--12--} ahead {>> RS: note <<} and after",
+        ]
+        for source in cases {
+            let document = Document(parsing: source,
+                                    options: [.parseComments, .parseTrackedChanges])
+            var walker = Comments()
+            walker.visit(document)
+            XCTAssertEqual(1, walker.found.count, source)
+            guard let comment = walker.found.first, let range = comment.range else {
+                XCTFail("no range for \(source)"); continue
+            }
+            let index = SourceByteIndex(source)
+            XCTAssertEqual("{>> RS: note <<}", index.text(in: range).map(String.init), source)
+        }
+    }
+
+    /// Both comments, on either side of the change, each pointing at its own marker.
+    func testCommentsEitherSideOfATrackedChange() {
+        let source = "One {>> RS: same <<} two {--gone--} three {>> RS: same <<} end"
+        let document = Document(parsing: source, options: [.parseComments, .parseTrackedChanges])
+        var walker = Comments()
+        walker.visit(document)
+        XCTAssertEqual(2, walker.found.count)
+        let index = SourceByteIndex(source)
+        XCTAssertNotEqual(walker.found[0].range, walker.found[1].range)
+        for comment in walker.found {
+            guard let range = comment.range else { XCTFail("no range"); continue }
+            XCTAssertEqual("{>> RS: same <<}", index.text(in: range).map(String.init))
+        }
+        let first = index.index(of: walker.found[0].range!.lowerBound)!
+        XCTAssertEqual(4, source.distance(from: source.startIndex, to: first))
+        let second = index.index(of: walker.found[1].range!.lowerBound)!
+        XCTAssertEqual(42, source.distance(from: source.startIndex, to: second))
+    }
+
     struct Comments: MarkupWalker {
         var found: [InlineComment] = []
         mutating func visitInlineComment(_ c: InlineComment) { found.append(c) }

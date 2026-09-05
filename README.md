@@ -53,6 +53,7 @@ options produces exactly the tree upstream produces.
 | `TrackedChange` source ranges | new | a claimed change carries the range of its own characters, across a span that crosses sibling nodes and a deletion whose `--` smart punctuation has already turned into an en dash |
 | `InlineComment` source ranges | bug fix | a claimed comment carries the range of its own characters, so an application can find them again — two comments may say the same thing, and only a position tells them apart |
 | `ParseOptions.parseTrackedChanges` | new | CriticMarkup's tracked changes — `{++ins++}`, `{--del--}`, `{~~old~>new~~}`, `{==highlight==}` — as `TrackedChange` |
+| Text ranges around a tracked change | bug fix | claiming a change splits the run of text it was in, and the pieces either side kept no range — so a comment sharing a paragraph with a change could be found and not placed |
 | `InlineAttributes: RecurringInlineMarkup` | bug fix | one of these can hold another, and cmark parses that, but the public initialisers refused it — a nested span was silently dropped |
 | `AttributeBlockParser` trailing block | bug fix | `# **Chapter** {.wide}` was refused: the block's own text node is just a space, and the heading's words are in the sibling before it |
 
