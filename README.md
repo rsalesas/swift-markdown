@@ -50,6 +50,7 @@ options produces exactly the tree upstream produces.
 | `ParseOptions.preserveBlankLines` | new | runs of blank lines between blocks as `BlankLines`, which CommonMark throws away |
 | `ParseOptions.parseComments` | new | CriticMarkup `{>> … <<}` as `InlineComment`, whose `plainText` is empty so a comment never reaches a title or a table of contents |
 | `ParseOptions.parseInlineSpans` | new | Pandoc's bracketed span — `[text]{.class}` — as `InlineAttributes` |
+| `TrackedChange` source ranges | new | a claimed change carries the range of its own characters, across a span that crosses sibling nodes and a deletion whose `--` smart punctuation has already turned into an en dash |
 | `InlineComment` source ranges | bug fix | a claimed comment carries the range of its own characters, so an application can find them again — two comments may say the same thing, and only a position tells them apart |
 | `ParseOptions.parseTrackedChanges` | new | CriticMarkup's tracked changes — `{++ins++}`, `{--del--}`, `{~~old~>new~~}`, `{==highlight==}` — as `TrackedChange` |
 | `InlineAttributes: RecurringInlineMarkup` | bug fix | one of these can hold another, and cmark parses that, but the public initialisers refused it — a nested span was silently dropped |
@@ -87,10 +88,10 @@ before you build a renderer on them:
 ## Using it
 
 ```swift
-.package(url: "https://github.com/rsalesas/swift-markdown.git", from: "0.16.0"),
+.package(url: "https://github.com/rsalesas/swift-markdown.git", from: "0.17.0"),
 ```
 
-Tagged `0.16.0` — ahead of upstream's 0.8.0, and numbered so it cannot be mistaken
+Tagged `0.17.0` — ahead of upstream's 0.8.0, and numbered so it cannot be mistaken
 for an upstream patch release. Unlike upstream's `main`, this fork pins swift-cmark
 to a version rather than tracking its `gfm` branch, because SwiftPM refuses to
 resolve a versioned dependency whose own manifest depends on a branch. Upstream does
